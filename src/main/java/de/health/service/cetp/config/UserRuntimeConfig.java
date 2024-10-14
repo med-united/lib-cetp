@@ -15,7 +15,7 @@ public interface UserRuntimeConfig {
 
     String getUserId();
 
-    IUserConfigurations getUserConfigurations();
+    IUserConfigurations getConfigurations();
 
     IRuntimeConfig getRuntimeConfig();
 

@@ -66,7 +66,7 @@ public class FSConfigService implements KonnektorConfigService {
                 new KonnektorConfig(
                     konnektorConfigFolder,
                     subscriptionConfig.getCetpPort(),
-                    userRuntimeConfig.getUserConfigurations(),
+                    userRuntimeConfig.getConfigurations(),
                     URI.create(
                         subscriptionConfig.getCardLinkServer()
                             .orElse("wss://cardlink.service-health.de:8444/websocket/80276003650110006580-20230112")
