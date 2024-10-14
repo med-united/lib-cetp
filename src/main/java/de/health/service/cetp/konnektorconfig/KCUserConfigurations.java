@@ -13,8 +13,8 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@SuppressWarnings({"unused"})
 @Data
-@SuppressWarnings("unused")
 public class KCUserConfigurations implements IUserConfigurations {
 
     private static final Logger log = Logger.getLogger(KCUserConfigurations.class.getName());
