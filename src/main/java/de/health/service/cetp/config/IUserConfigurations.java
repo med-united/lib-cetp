@@ -17,6 +17,8 @@ public interface IUserConfigurations {
 
     String getErixaUserEmail();
 
+    String getErixaUserPassword();
+
     String getErixaApiKey();
 
     String getMuster16TemplateProfile();
@@ -36,4 +38,6 @@ public interface IUserConfigurations {
     void setVersion(String version);
 
     String getTvMode();
+
+    String getPruefnummer();
 }
