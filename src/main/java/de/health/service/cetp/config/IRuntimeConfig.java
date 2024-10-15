@@ -7,6 +7,10 @@ public interface IRuntimeConfig {
 
     String getSMCBHandle();
 
+    void setEHBAHandle(String eHBAHandle);
+
+    void setSMCBHandle(String smcbHandle);
+
     boolean isSendPreview();
 
     String getIdpAuthRequestRedirectURL();
