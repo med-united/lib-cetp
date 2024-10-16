@@ -1,6 +1,6 @@
 package de.health.service.cetp.konnektorconfig;
 
-import de.health.service.cetp.config.IUserConfigurations;
+import de.servicehealth.epa4all.config.api.IUserConfigurations;
 import lombok.Data;
 
 import java.beans.BeanInfo;

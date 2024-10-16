@@ -1,7 +1,8 @@
 package de.health.service.cetp.konnektorconfig;
 
-import de.health.service.cetp.config.SubscriptionConfig;
-import de.health.service.cetp.config.UserRuntimeConfig;
+import de.servicehealth.epa4all.config.KonnektorConfig;
+import de.servicehealth.epa4all.config.api.ISubscriptionConfig;
+import de.servicehealth.epa4all.config.api.UserRuntimeConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Setter;
@@ -42,12 +43,12 @@ public class FSConfigService implements KonnektorConfigService {
     @ConfigProperty(name = "ere.per.konnektor.config.folder")
     String configFolder;
 
-    SubscriptionConfig subscriptionConfig;
+    ISubscriptionConfig subscriptionConfig;
     UserRuntimeConfig userRuntimeConfig;
 
     @Inject
     public FSConfigService(
-        SubscriptionConfig subscriptionConfig,
+        ISubscriptionConfig subscriptionConfig,
         UserRuntimeConfig userRuntimeConfig
     ) {
         this.subscriptionConfig = subscriptionConfig;
@@ -65,7 +66,7 @@ public class FSConfigService implements KonnektorConfigService {
             configs.add(
                 new KonnektorConfig(
                     konnektorConfigFolder,
-                    subscriptionConfig.getCetpPort(),
+                    subscriptionConfig.getCetpServerDefaultPort(),
                     userRuntimeConfig.getConfigurations(),
                     URI.create(
                         subscriptionConfig.getCardLinkServer()
@@ -120,12 +121,12 @@ public class FSConfigService implements KonnektorConfigService {
                     Properties properties = new Properties();
                     properties.load(fis);
                     KonnektorConfig konnektorConfig = new KonnektorConfig();
-                    konnektorConfig.cetpPort = Integer.parseInt(folder.getName());
-                    konnektorConfig.userConfigurations = new KCUserConfigurations(properties);
-                    konnektorConfig.cardlinkEndpoint = new URI(properties.getProperty("cardlinkServerURL"));
-                    konnektorConfig.subscriptionId = subscriptionId;
-                    konnektorConfig.subscriptionTime = subscriptionTime;
-                    konnektorConfig.folder = folder;
+                    konnektorConfig.setCetpPort(Integer.parseInt(folder.getName()));
+                    konnektorConfig.setUserConfigurations(new KCUserConfigurations(properties));
+                    konnektorConfig.setCardlinkEndpoint(new URI(properties.getProperty("cardlinkServerURL")));
+                    konnektorConfig.setSubscriptionId(subscriptionId);
+                    konnektorConfig.setSubscriptionTime(subscriptionTime);
+                    konnektorConfig.setFolder(folder);
                     return konnektorConfig;
                 } catch (URISyntaxException | IOException e) {
                     String msg = String.format(

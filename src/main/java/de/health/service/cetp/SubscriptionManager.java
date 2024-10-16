@@ -1,13 +1,13 @@
 package de.health.service.cetp;
 
-import de.health.service.cetp.config.SubscriptionConfig;
-import de.health.service.cetp.config.UserRuntimeConfig;
 import de.health.service.cetp.domain.CetpStatus;
 import de.health.service.cetp.domain.SubscriptionResult;
 import de.health.service.cetp.domain.eventservice.Subscription;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.cetp.domain.fault.Error;
-import de.health.service.cetp.konnektorconfig.KonnektorConfig;
+import de.servicehealth.epa4all.config.api.ISubscriptionConfig;
+import de.servicehealth.epa4all.config.api.UserRuntimeConfig;
+import de.servicehealth.epa4all.config.KonnektorConfig;
 import de.health.service.cetp.konnektorconfig.KonnektorConfigService;
 import de.health.service.cetp.retry.Retrier;
 import de.health.service.cetp.utils.LocalAddressInSameSubnetFinder;
@@ -55,7 +55,7 @@ public class SubscriptionManager {
 
     private final Map<String, KonnektorConfig> hostToKonnektorConfig = new ConcurrentHashMap<>();
 
-    SubscriptionConfig subscriptionConfig;
+    ISubscriptionConfig subscriptionConfig;
     UserRuntimeConfig userRuntimeConfig;
     IKonnektorClient konnektorClient;
     KonnektorConfigService kcService;
@@ -64,7 +64,7 @@ public class SubscriptionManager {
 
     @Inject
     public SubscriptionManager(
-        SubscriptionConfig subscriptionConfig,
+        ISubscriptionConfig subscriptionConfig,
         UserRuntimeConfig userRuntimeConfig,
         IKonnektorClient konnektorClient,
         KonnektorConfigService kcService
@@ -93,7 +93,7 @@ public class SubscriptionManager {
             log.log(Level.WARNING, "You did not set 'cetp.subscriptions.event-to-host' property. Will have no fallback if Konnektor is not found to be in the same subnet");
         }
         List<Integer> retryMillis = List.of(200);
-        int intervalMs = subscriptionConfig.getSubscriptionsMaintenanceRetryIntervalMs();
+        int intervalMs = subscriptionConfig.getCetpSubscriptionsMaintenanceRetryIntervalMs();
         List<Future<Boolean>> futures = getKonnektorConfigs(null).stream().map(kc -> threadPool.submit(() -> {
             Inet4Address meInSameSubnet = LocalAddressInSameSubnetFinder.findLocalIPinSameSubnet(konnektorToIp4(kc.getHost()));
             String eventToHost = (meInSameSubnet != null) ? meInSameSubnet.getHostAddress() : defaultSender;

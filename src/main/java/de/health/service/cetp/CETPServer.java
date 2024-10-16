@@ -1,9 +1,9 @@
 package de.health.service.cetp;
 
 import de.health.service.cetp.codec.CETPEventDecoderFactory;
-import de.health.service.cetp.config.IUserConfigurations;
-import de.health.service.cetp.config.SubscriptionConfig;
-import de.health.service.cetp.konnektorconfig.KonnektorConfig;
+import de.servicehealth.epa4all.config.api.IUserConfigurations;
+import de.servicehealth.epa4all.config.api.ISubscriptionConfig;
+import de.servicehealth.epa4all.config.KonnektorConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -58,7 +58,7 @@ public class CETPServer {
     @Getter
     private final Map<String, String> startedOnPorts = new HashMap<>();
 
-    SubscriptionConfig subscriptionConfig;
+    ISubscriptionConfig subscriptionConfig;
     SubscriptionManager subscriptionManager;
     FallbackSecretsManager fallbackSecretsManager;
 
@@ -67,7 +67,7 @@ public class CETPServer {
 
     @Inject
     public CETPServer(
-        SubscriptionConfig subscriptionConfig,
+        ISubscriptionConfig subscriptionConfig,
         SubscriptionManager subscriptionManager,
         CETPEventDecoderFactory eventDecoderFactory,
         CETPEventHandlerFactory eventHandlerFactory,
@@ -86,7 +86,7 @@ public class CETPServer {
     }
 
     void onShutdown(@Observes ShutdownEvent ev) {
-        log.info("Shutdown CETP Server on port " + subscriptionConfig.getCetpPort());
+        log.info("Shutdown CETP Server on port " + subscriptionConfig.getCetpServerDefaultPort());
         if (workerGroups != null) {
             workerGroups.stream().filter(Objects::nonNull).forEach(EventExecutorGroup::shutdownGracefully);
         }
