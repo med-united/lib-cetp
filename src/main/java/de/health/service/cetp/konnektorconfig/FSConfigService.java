@@ -1,8 +1,8 @@
 package de.health.service.cetp.konnektorconfig;
 
-import de.servicehealth.epa4all.config.KonnektorConfig;
-import de.servicehealth.epa4all.config.api.ISubscriptionConfig;
-import de.servicehealth.epa4all.config.api.UserRuntimeConfig;
+import de.servicehealth.config.KonnektorConfig;
+import de.servicehealth.config.api.ISubscriptionConfig;
+import de.servicehealth.config.api.UserRuntimeConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Setter;
@@ -63,15 +63,15 @@ public class FSConfigService implements KonnektorConfigService {
             configs = readFromPath(konnektorConfigFolder.getAbsolutePath());
         }
         if (configs.isEmpty()) {
+            int cetpServerDefaultPort = subscriptionConfig.getCetpServerDefaultPort();
+            String cardlinkServer = subscriptionConfig.getCardLinkServer()
+                .orElse("wss://cardlink.service-health.de:8444/websocket/80276003650110006580-20230112");
             configs.add(
                 new KonnektorConfig(
                     konnektorConfigFolder,
-                    subscriptionConfig.getCetpServerDefaultPort(),
-                    userRuntimeConfig.getConfigurations(),
-                    URI.create(
-                        subscriptionConfig.getCardLinkServer()
-                            .orElse("wss://cardlink.service-health.de:8444/websocket/80276003650110006580-20230112")
-                    )
+                    cetpServerDefaultPort,
+                    URI.create(cardlinkServer),
+                    userRuntimeConfig.getConfigurations()
                 )
             );
         }

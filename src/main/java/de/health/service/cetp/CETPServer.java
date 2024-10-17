@@ -1,9 +1,10 @@
 package de.health.service.cetp;
 
 import de.health.service.cetp.codec.CETPEventDecoderFactory;
-import de.servicehealth.epa4all.config.api.IUserConfigurations;
-import de.servicehealth.epa4all.config.api.ISubscriptionConfig;
-import de.servicehealth.epa4all.config.KonnektorConfig;
+import de.health.service.cetp.domain.eventservice.event.mapper.CetpEventMapper;
+import de.servicehealth.config.api.IUserConfigurations;
+import de.servicehealth.config.api.ISubscriptionConfig;
+import de.servicehealth.config.KonnektorConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -64,6 +65,7 @@ public class CETPServer {
 
     CETPEventDecoderFactory eventDecoderFactory;
     CETPEventHandlerFactory eventHandlerFactory;
+    CetpEventMapper eventMapper;
 
     @Inject
     public CETPServer(
@@ -126,7 +128,7 @@ public class CETPServer {
                                 .addLast("ssl", sslContext.newHandler(ch.alloc()))
                                 .addLast("logging", new LoggingHandler(LogLevel.DEBUG))
                                 .addLast(new LengthFieldBasedFrameDecoder(65536, 4, 4, 0, 0))
-                                .addLast(eventDecoderFactory.build(config.getUserConfigurations()))
+                                .addLast(eventDecoderFactory.build(config.getUserConfigurations(), eventMapper))
                                 .addLast(eventHandlerFactory.build(config));
                         } catch (Exception e) {
                             log.log(Level.WARNING, "Failed to create SSL context", e);

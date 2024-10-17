@@ -1,9 +1,10 @@
 package de.health.service.cetp.codec;
 
-import de.servicehealth.epa4all.config.api.IUserConfigurations;
+import de.health.service.cetp.domain.eventservice.event.mapper.CetpEventMapper;
+import de.servicehealth.config.api.IUserConfigurations;
 import io.netty.channel.ChannelInboundHandler;
 
 public interface CETPEventDecoderFactory {
 
-    ChannelInboundHandler build(IUserConfigurations userConfigurations);
+    ChannelInboundHandler build(IUserConfigurations configurations, CetpEventMapper eventMapper);
 }

@@ -1,6 +1,6 @@
 package de.health.service.cetp;
 
-import de.servicehealth.epa4all.config.api.UserRuntimeConfig;
+import de.servicehealth.config.api.UserRuntimeConfig;
 import de.health.service.cetp.domain.CetpStatus;
 import de.health.service.cetp.domain.SubscriptionResult;
 import de.health.service.cetp.domain.eventservice.Subscription;

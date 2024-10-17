@@ -1,6 +1,6 @@
 package de.health.service.cetp.konnektorconfig;
 
-import de.servicehealth.epa4all.config.KonnektorConfig;
+import de.servicehealth.config.KonnektorConfig;
 
 import java.util.Map;
 
