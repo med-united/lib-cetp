@@ -63,15 +63,14 @@ public class FSConfigService implements KonnektorConfigService {
             configs = readFromPath(konnektorConfigFolder.getAbsolutePath());
         }
         if (configs.isEmpty()) {
-            int cetpServerDefaultPort = subscriptionConfig.getCetpServerDefaultPort();
-            String cardlinkServer = subscriptionConfig.getCardLinkServer()
-                .orElse("wss://cardlink.service-health.de:8444/websocket/80276003650110006580-20230112");
+            int cetpServerDefaultPort = subscriptionConfig.getDefaultCetpServerPort();
+            String cardlinkServer = subscriptionConfig.getDefaultCardLinkServer();
             configs.add(
                 new KonnektorConfig(
                     konnektorConfigFolder,
                     cetpServerDefaultPort,
                     URI.create(cardlinkServer),
-                    userRuntimeConfig.getConfigurations()
+                    userRuntimeConfig.getUserConfigurations()
                 )
             );
         }

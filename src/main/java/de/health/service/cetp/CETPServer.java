@@ -88,7 +88,7 @@ public class CETPServer {
     }
 
     void onShutdown(@Observes ShutdownEvent ev) {
-        log.info("Shutdown CETP Server on port " + subscriptionConfig.getCetpServerDefaultPort());
+        log.info("Shutdown CETP Server on port " + subscriptionConfig.getDefaultCetpServerPort());
         if (workerGroups != null) {
             workerGroups.stream().filter(Objects::nonNull).forEach(EventExecutorGroup::shutdownGracefully);
         }
@@ -128,7 +128,7 @@ public class CETPServer {
                                 .addLast("ssl", sslContext.newHandler(ch.alloc()))
                                 .addLast("logging", new LoggingHandler(LogLevel.DEBUG))
                                 .addLast(new LengthFieldBasedFrameDecoder(65536, 4, 4, 0, 0))
-                                .addLast(eventDecoderFactory.build(config.getUserConfigurations(), eventMapper))
+                                .addLast(eventDecoderFactory.build(config.getUserConfigurations(), eventMapper)) //can remove
                                 .addLast(eventHandlerFactory.build(config));
                         } catch (Exception e) {
                             log.log(Level.WARNING, "Failed to create SSL context", e);

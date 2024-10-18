@@ -88,7 +88,7 @@ public class SubscriptionManager {
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP
     )
     void subscriptionsMaintenance() {
-        String defaultSender = subscriptionConfig.getEventToHost().orElse(null);
+        String defaultSender = subscriptionConfig.getDefaultEventToHost();
         if (defaultSender == null) {
             log.log(Level.WARNING, "You did not set 'cetp.subscriptions.event-to-host' property. Will have no fallback if Konnektor is not found to be in the same subnet");
         }
