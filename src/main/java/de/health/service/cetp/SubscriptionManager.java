@@ -82,7 +82,7 @@ public class SubscriptionManager {
 
     @SuppressWarnings("unused")
     @Scheduled(
-        every = "${cetp.subscription.maintenance.interval.sec:3s}",
+        every = "${cetp.subscriptions.maintenance.interval.sec:3s}",
         delay = 5,
         delayUnit = TimeUnit.SECONDS,
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP
