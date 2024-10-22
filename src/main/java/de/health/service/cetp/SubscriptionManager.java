@@ -76,8 +76,10 @@ public class SubscriptionManager {
     }
 
     public void onStart(@Observes StartupEvent ev) {
+        log.info("SubscriptionManager starting..");
         hostToKonnektorConfig.putAll(kcService.loadConfigs());
         threadPool = Executors.newFixedThreadPool(hostToKonnektorConfig.size());
+        log.info("SubscriptionManager started");
     }
 
     @SuppressWarnings("unused")
