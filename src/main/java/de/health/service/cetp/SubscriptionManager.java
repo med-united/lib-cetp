@@ -5,12 +5,12 @@ import de.health.service.cetp.domain.SubscriptionResult;
 import de.health.service.cetp.domain.eventservice.Subscription;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.cetp.domain.fault.Error;
-import de.servicehealth.config.api.ISubscriptionConfig;
-import de.servicehealth.config.api.UserRuntimeConfig;
-import de.servicehealth.config.KonnektorConfig;
 import de.health.service.cetp.konnektorconfig.KonnektorConfigService;
 import de.health.service.cetp.retry.Retrier;
 import de.health.service.cetp.utils.LocalAddressInSameSubnetFinder;
+import de.servicehealth.config.KonnektorConfig;
+import de.servicehealth.config.api.ISubscriptionConfig;
+import de.servicehealth.config.api.UserRuntimeConfig;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -84,7 +84,7 @@ public class SubscriptionManager {
 
     @SuppressWarnings("unused")
     @Scheduled(
-        every = "${cetp.subscriptions.maintenance.interval.sec:3s}",
+        every = "${cetp.subscriptions.maintenance.interval.sec:3s}", // TODO naming
         delay = 5,
         delayUnit = TimeUnit.SECONDS,
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP

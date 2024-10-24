@@ -1,10 +1,10 @@
 package de.health.service.cetp;
 
 import de.health.service.cetp.codec.CETPEventDecoderFactory;
-import de.health.service.cetp.domain.eventservice.event.mapper.CetpEventMapper;
-import de.servicehealth.config.api.IUserConfigurations;
-import de.servicehealth.config.api.ISubscriptionConfig;
 import de.servicehealth.config.KonnektorConfig;
+import de.servicehealth.config.api.ISubscriptionConfig;
+import de.servicehealth.config.api.IUserConfigurations;
+import de.servicehealth.utils.SSLResult;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -21,6 +21,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,14 +31,7 @@ import lombok.Getter;
 
 import javax.net.ssl.KeyManagerFactory;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +39,12 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static de.servicehealth.utils.SSLUtils.getClientCertificateBytes;
+import static de.servicehealth.utils.SSLUtils.initSSLContext;
+
 @SuppressWarnings({"CdiInjectionPointsInspection", "unused"})
 @ApplicationScoped
+@Startup
 public class CETPServer {
 
     public static final int DEFAULT_PORT = 8585;
@@ -65,7 +63,6 @@ public class CETPServer {
 
     CETPEventDecoderFactory eventDecoderFactory;
     CETPEventHandlerFactory eventHandlerFactory;
-    CetpEventMapper eventMapper;
 
     @Inject
     public CETPServer(
@@ -128,7 +125,7 @@ public class CETPServer {
                                 .addLast("ssl", sslContext.newHandler(ch.alloc()))
                                 .addLast("logging", new LoggingHandler(LogLevel.DEBUG))
                                 .addLast(new LengthFieldBasedFrameDecoder(65536, 4, 4, 0, 0))
-                                .addLast(eventDecoderFactory.build(config.getUserConfigurations(), eventMapper)) //can remove
+                                .addLast(eventDecoderFactory.build(config.getUserConfigurations()))
                                 .addLast(eventHandlerFactory.build(config));
                         } catch (Exception e) {
                             log.log(Level.WARNING, "Failed to create SSL context", e);
@@ -159,27 +156,14 @@ public class CETPServer {
             return fallbackSecretsManager.getKeyManagerFactory();
         } else {
             byte[] clientCertificateBytes = getClientCertificateBytes(userConfigurations);
-            try (ByteArrayInputStream certificateInputStream = new ByteArrayInputStream(clientCertificateBytes)) {
-                KeyStore ks = KeyStore.getInstance("pkcs12");
-                String connectorTlsCertAuthStorePwd = userConfigurations.getClientCertificatePassword();
-                ks.load(certificateInputStream, connectorTlsCertAuthStorePwd.toCharArray());
-
-                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                keyManagerFactory.init(ks, connectorTlsCertAuthStorePwd.toCharArray());
-                return keyManagerFactory;
-            } catch (UnrecoverableKeyException | KeyStoreException | NoSuchAlgorithmException | CertificateException |
-                     IOException e) {
+            try (ByteArrayInputStream certInputStream = new ByteArrayInputStream(clientCertificateBytes)) {
+                SSLResult sslResult = initSSLContext(certInputStream, userConfigurations.getClientCertificatePassword());
+                return sslResult.getKeyManagerFactory();
+            } catch (Exception e) {
                 log.log(Level.SEVERE, "Could not create keyManagerFactory", e);
             }
         }
         return null;
-    }
-
-    private byte[] getClientCertificateBytes(IUserConfigurations userConfigurations) {
-        String base64UrlCertificate = userConfigurations.getClientCertificate();
-        String clientCertificateString = base64UrlCertificate.split(",")[1];
-        log.fine("Using certificate: "+clientCertificateString);
-        return Base64.getDecoder().decode(clientCertificateString);
     }
 }
 
