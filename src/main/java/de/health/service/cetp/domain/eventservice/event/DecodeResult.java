@@ -1,6 +1,6 @@
 package de.health.service.cetp.domain.eventservice.event;
 
-import de.servicehealth.config.api.IUserConfigurations;
+import de.health.service.config.api.IUserConfigurations;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

@@ -4,15 +4,13 @@ import de.health.service.cetp.cardlink.CardlinkWebsocketClient;
 import de.health.service.cetp.domain.eventservice.event.CetpEvent;
 import de.health.service.cetp.domain.eventservice.event.CetpParameter;
 import de.health.service.cetp.domain.eventservice.event.DecodeResult;
-import de.servicehealth.config.api.IUserConfigurations;
+import de.health.service.config.api.IUserConfigurations;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.jboss.logging.MDC;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;

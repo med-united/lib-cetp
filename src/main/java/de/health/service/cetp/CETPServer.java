@@ -1,10 +1,8 @@
 package de.health.service.cetp;
 
 import de.health.service.cetp.codec.CETPEventDecoderFactory;
-import de.servicehealth.config.KonnektorConfig;
-import de.servicehealth.config.api.ISubscriptionConfig;
-import de.servicehealth.config.api.IUserConfigurations;
-import de.servicehealth.utils.SSLResult;
+import de.health.service.cetp.config.KonnektorConfig;
+import de.health.service.config.api.ISubscriptionConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -29,8 +27,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.Getter;
 
-import javax.net.ssl.KeyManagerFactory;
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,9 +34,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static de.servicehealth.utils.SSLUtils.getClientCertificateBytes;
-import static de.servicehealth.utils.SSLUtils.initSSLContext;
 
 @SuppressWarnings({"CdiInjectionPointsInspection", "unused"})
 @ApplicationScoped
@@ -59,7 +52,7 @@ public class CETPServer {
 
     ISubscriptionConfig subscriptionConfig;
     SubscriptionManager subscriptionManager;
-    FallbackSecretsManager fallbackSecretsManager;
+    ISecretsManager secretsManager;
 
     CETPEventDecoderFactory eventDecoderFactory;
     CETPEventHandlerFactory eventHandlerFactory;
@@ -70,13 +63,13 @@ public class CETPServer {
         SubscriptionManager subscriptionManager,
         CETPEventDecoderFactory eventDecoderFactory,
         CETPEventHandlerFactory eventHandlerFactory,
-        FallbackSecretsManager fallbackSecretsManager
+        ISecretsManager secretsManager
     ) {
         this.subscriptionConfig = subscriptionConfig;
         this.subscriptionManager = subscriptionManager;
         this.eventDecoderFactory = eventDecoderFactory;
         this.eventHandlerFactory = eventHandlerFactory;
-        this.fallbackSecretsManager = fallbackSecretsManager;
+        this.secretsManager = secretsManager;
     }
 
     // Make sure subscription manager get onStart first, before CETPServer at least!
@@ -117,7 +110,7 @@ public class CETPServer {
                     public void initChannel(SocketChannel ch) {
                         try {
                             SslContext sslContext = SslContextBuilder
-                                .forServer(getKeyFactoryManager(config))
+                                .forServer(secretsManager.getKeyManagerFactory(config))
                                 .clientAuth(ClientAuth.NONE)
                                 .build();
 
@@ -148,22 +141,6 @@ public class CETPServer {
             startedOnPorts.put(port.toString(), String.format("FAILED: %s", e.getMessage()));
             log.log(Level.WARNING, "CETP Server interrupted", e);
         }
-    }
-
-    private KeyManagerFactory getKeyFactoryManager(KonnektorConfig config) {
-        IUserConfigurations userConfigurations = config.getUserConfigurations();
-        if (userConfigurations.getClientCertificate() == null) {
-            return fallbackSecretsManager.getKeyManagerFactory();
-        } else {
-            byte[] clientCertificateBytes = getClientCertificateBytes(userConfigurations);
-            try (ByteArrayInputStream certInputStream = new ByteArrayInputStream(clientCertificateBytes)) {
-                SSLResult sslResult = initSSLContext(certInputStream, userConfigurations.getClientCertificatePassword());
-                return sslResult.getKeyManagerFactory();
-            } catch (Exception e) {
-                log.log(Level.SEVERE, "Could not create keyManagerFactory", e);
-            }
-        }
-        return null;
     }
 }
 

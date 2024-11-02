@@ -1,8 +1,8 @@
 package de.health.service.cetp.konnektorconfig;
 
-import de.servicehealth.config.KonnektorConfig;
-import de.servicehealth.config.api.ISubscriptionConfig;
-import de.servicehealth.config.api.UserRuntimeConfig;
+import de.health.service.cetp.config.KonnektorConfig;
+import de.health.service.config.api.ISubscriptionConfig;
+import de.health.service.config.api.UserRuntimeConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Setter;

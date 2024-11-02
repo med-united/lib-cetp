@@ -1,6 +1,6 @@
 package de.health.service.cetp;
 
-import de.servicehealth.config.KonnektorConfig;
+import de.health.service.cetp.config.KonnektorConfig;
 import io.netty.channel.ChannelInboundHandler;
 
 public interface CETPEventHandlerFactory {
