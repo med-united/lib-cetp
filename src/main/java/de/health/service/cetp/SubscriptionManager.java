@@ -15,6 +15,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.xml.ws.Holder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -80,6 +81,12 @@ public class SubscriptionManager {
         hostToKonnektorConfig.putAll(kcService.loadConfigs());
         threadPool = Executors.newFixedThreadPool(hostToKonnektorConfig.size());
         log.info("SubscriptionManager started");
+    }
+    
+    @Produces
+    @de.health.service.cetp.KonnektorConfig
+    public Map<String, KonnektorConfig> configMap() {
+    	return hostToKonnektorConfig;
     }
 
     @SuppressWarnings("unused")
