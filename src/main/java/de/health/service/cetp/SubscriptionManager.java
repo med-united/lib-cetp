@@ -116,7 +116,7 @@ public class SubscriptionManager {
                 () -> renewSubscriptions(eventToHost, kc),
                 bool -> bool
             );
-            if (!result) {
+            if (result == null || !result) {
                 String msg = String.format(
                     "[%s] Subscriptions maintenance is failed within %d ms retry", kc.getHost(), intervalMs);
                 log.warning(msg);
