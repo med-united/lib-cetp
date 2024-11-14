@@ -12,6 +12,5 @@ import jakarta.inject.Qualifier;
 @Qualifier
 @Retention(RUNTIME)
 @Target({FIELD, METHOD})
-public @interface KonnektorConfig {
-
+public @interface KonnektorsConfigs {
 }
