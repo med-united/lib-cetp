@@ -3,6 +3,8 @@ package de.health.service.cetp.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,6 +21,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.zip.GZIPInputStream;
 
 @SuppressWarnings("unused")
 public class Utils {
@@ -31,6 +35,45 @@ public class Utils {
                 os.write(content.getBytes());
             }
             os.flush();
+        }
+    }
+
+    public static void saveDataToFile(byte[] dataForWriting, File outputFile) throws IOException {
+        if (!outputFile.exists()) {
+            boolean created = outputFile.createNewFile();
+            if (!created) {
+                throw new IllegalStateException(String.format("File %s was not created", outputFile.getAbsolutePath()));
+            }
+        }
+        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+            outputStream.write(dataForWriting);
+        }
+    }
+
+    public static void unzipAndSaveDataToFile(byte[] dataForWriting, File outputFile) throws IOException {
+        if (!outputFile.exists()) {
+            boolean created = outputFile.createNewFile();
+            if (!created) {
+                throw new IllegalStateException(String.format("File %s was not created", outputFile.getAbsolutePath()));
+            }
+        }
+        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+            outputStream.write(decompress(dataForWriting));
+        }
+    }
+
+    public static byte[] decompress(final byte[] bytes) throws IOException {
+        if (bytes == null || bytes.length == 0) {
+            return new byte[0];
+        }
+        try (final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(bytes))) {
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            final byte[] data = new byte[8192];
+            int nRead;
+            while ((nRead = gzipInputStream.read(data)) != -1) {
+                out.write(data, 0, nRead);
+            }
+            return out.toByteArray();
         }
     }
 
