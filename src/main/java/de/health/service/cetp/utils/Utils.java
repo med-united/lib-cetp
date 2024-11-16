@@ -45,8 +45,8 @@ public class Utils {
                 throw new IllegalStateException(String.format("File %s was not created", outputFile.getAbsolutePath()));
             }
         }
-        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
-            outputStream.write(dataForWriting);
+        try (FileOutputStream os = new FileOutputStream(outputFile)) {
+            os.write(dataForWriting);
         }
     }
 
@@ -57,8 +57,8 @@ public class Utils {
                 throw new IllegalStateException(String.format("File %s was not created", outputFile.getAbsolutePath()));
             }
         }
-        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
-            outputStream.write(decompress(dataForWriting));
+        try (FileOutputStream os = new FileOutputStream(outputFile)) {
+            os.write(decompress(dataForWriting));
         }
     }
 
