@@ -84,7 +84,7 @@ public class SubscriptionManager {
     }
     
     @Produces
-    @de.health.service.cetp.KonnektorConfig
+    @KonnektorsConfigs
     public Map<String, KonnektorConfig> configMap() {
     	return hostToKonnektorConfig;
     }
