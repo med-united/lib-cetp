@@ -21,7 +21,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
-import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 
 @SuppressWarnings("unused")
@@ -40,10 +39,7 @@ public class Utils {
 
     public static void saveDataToFile(byte[] dataForWriting, File outputFile) throws IOException {
         if (!outputFile.exists()) {
-            boolean created = outputFile.createNewFile();
-            if (!created) {
-                throw new IllegalStateException(String.format("File %s was not created", outputFile.getAbsolutePath()));
-            }
+            outputFile.createNewFile();
         }
         try (FileOutputStream os = new FileOutputStream(outputFile)) {
             os.write(dataForWriting);
@@ -52,10 +48,7 @@ public class Utils {
 
     public static void unzipAndSaveDataToFile(byte[] dataForWriting, File outputFile) throws IOException {
         if (!outputFile.exists()) {
-            boolean created = outputFile.createNewFile();
-            if (!created) {
-                throw new IllegalStateException(String.format("File %s was not created", outputFile.getAbsolutePath()));
-            }
+            outputFile.createNewFile();
         }
         try (FileOutputStream os = new FileOutputStream(outputFile)) {
             os.write(decompress(dataForWriting));
@@ -79,7 +72,11 @@ public class Utils {
 
     public static boolean deleteFiles(File folder, Predicate<File> predicate) {
         AtomicBoolean result = new AtomicBoolean(true);
-        Arrays.stream(folder.listFiles())
+        File[] files = folder.listFiles();
+        if (files == null) {
+            return false;
+        }
+        Arrays.stream(files)
             .filter(predicate)
             .forEach(file -> result.set(result.get() & file.delete()));
         return result.get();
