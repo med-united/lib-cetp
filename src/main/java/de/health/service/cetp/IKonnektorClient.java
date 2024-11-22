@@ -36,4 +36,12 @@ public interface IKonnektorClient {
         UserRuntimeConfig userRuntimeConfig,
         String smcbHandle
     ) throws CetpFault;
+
+    String getSmcbHandle(UserRuntimeConfig userRuntimeConfig) throws CetpFault;
+
+    String getTelematikId(UserRuntimeConfig userRuntimeConfig, String smcbHandle);
+
+    String getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId);
+
+    String getKvnr(UserRuntimeConfig userRuntimeConfig, String egkHandle);
 }
