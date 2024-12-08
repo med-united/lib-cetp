@@ -13,6 +13,7 @@ import de.health.service.config.api.ISubscriptionConfig;
 import de.health.service.config.api.UserRuntimeConfig;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
@@ -76,7 +77,7 @@ public class SubscriptionManager {
         this.kcService = kcService;
     }
 
-    public void onStart(@Observes StartupEvent ev) {
+    public void onStart(@Observes @Priority(10) StartupEvent ev) {
         log.info("SubscriptionManager starting..");
         hostToKonnektorConfig.putAll(kcService.loadConfigs());
         threadPool = Executors.newFixedThreadPool(hostToKonnektorConfig.size());
