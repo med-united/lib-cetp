@@ -33,15 +33,15 @@ public interface IKonnektorClient {
     List<Card> getCards(UserRuntimeConfig runtimeConfig, CardType cardType) throws CetpFault;
 
     Pair<X509Certificate, Boolean> getSmcbX509Certificate(
-        UserRuntimeConfig userRuntimeConfig,
-        String smcbHandle
+        String smcbHandle,
+        UserRuntimeConfig userRuntimeConfig
     ) throws CetpFault;
-
-    String getSmcbHandle(UserRuntimeConfig userRuntimeConfig) throws CetpFault;
 
     String getTelematikId(UserRuntimeConfig userRuntimeConfig, String smcbHandle);
 
-    String getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId);
+    String getSmcbHandle(UserRuntimeConfig userRuntimeConfig) throws CetpFault;
 
-    String getKvnr(UserRuntimeConfig userRuntimeConfig, String egkHandle);
+    String getKvnr(UserRuntimeConfig userRuntimeConfig, String egkHandle) throws CetpFault;
+
+    String getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId) throws CetpFault;
 }
