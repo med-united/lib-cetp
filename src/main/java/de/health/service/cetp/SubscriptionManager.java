@@ -1,5 +1,6 @@
 package de.health.service.cetp;
 
+import de.health.service.cetp.config.KonnektorConfig;
 import de.health.service.cetp.domain.CetpStatus;
 import de.health.service.cetp.domain.SubscriptionResult;
 import de.health.service.cetp.domain.eventservice.Subscription;
@@ -8,15 +9,14 @@ import de.health.service.cetp.domain.fault.Error;
 import de.health.service.cetp.konnektorconfig.KonnektorConfigService;
 import de.health.service.cetp.retry.Retrier;
 import de.health.service.cetp.utils.LocalAddressInSameSubnetFinder;
-import de.health.service.cetp.config.KonnektorConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import de.health.service.config.api.UserRuntimeConfig;
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.xml.ws.Holder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,6 +46,7 @@ import java.util.stream.Collectors;
 import static de.health.service.cetp.utils.Utils.printException;
 
 @SuppressWarnings({"CdiInjectionPointsInspection", "unused"})
+@IfBuildProperty(name = "feature.cetp.enabled", stringValue = "true", enableIfMissing = true)
 @ApplicationScoped
 public class SubscriptionManager {
 
@@ -55,14 +55,16 @@ public class SubscriptionManager {
     
     public static final String FAILED = "failed";
 
-    private final Map<String, KonnektorConfig> hostToKonnektorConfig = new ConcurrentHashMap<>();
-
     ISubscriptionConfig subscriptionConfig;
     UserRuntimeConfig userRuntimeConfig;
     IKonnektorClient konnektorClient;
     KonnektorConfigService kcService;
 
     private ExecutorService threadPool;
+
+    @Inject
+    @KonnektorsConfigs
+    Map<String, KonnektorConfig> konnektorsConfigs;
 
     @Inject
     public SubscriptionManager(
@@ -77,20 +79,12 @@ public class SubscriptionManager {
         this.kcService = kcService;
     }
 
-    public void onStart(@Observes @Priority(10) StartupEvent ev) {
+    public void onStart(@Observes @Priority(20) StartupEvent ev) {
         log.info("SubscriptionManager starting..");
-        hostToKonnektorConfig.putAll(kcService.loadConfigs());
-        threadPool = Executors.newFixedThreadPool(hostToKonnektorConfig.size());
+        threadPool = Executors.newFixedThreadPool(konnektorsConfigs.size());
         log.info("SubscriptionManager started");
     }
     
-    @Produces
-    @KonnektorsConfigs
-    public Map<String, KonnektorConfig> configMap() {
-    	return hostToKonnektorConfig;
-    }
-
-    @SuppressWarnings("unused")
     @Scheduled(
         every = "${cetp.subscriptions.maintenance.interval.sec:3s}", // TODO naming
         delay = 5,
@@ -276,8 +270,8 @@ public class SubscriptionManager {
 
     public Collection<KonnektorConfig> getKonnektorConfigs(String host) {
         return host == null
-            ? hostToKonnektorConfig.values()
-            : hostToKonnektorConfig.entrySet().stream().filter(entry -> entry.getKey().contains(host)).map(Map.Entry::getValue).toList();
+            ? konnektorsConfigs.values()
+            : konnektorsConfigs.entrySet().stream().filter(entry -> entry.getKey().contains(host)).map(Map.Entry::getValue).toList();
     }
 
     private boolean subscribe(
