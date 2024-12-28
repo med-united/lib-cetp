@@ -18,6 +18,7 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
@@ -26,6 +27,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.Getter;
+import org.apache.commons.lang3.time.StopWatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @SuppressWarnings({"CdiInjectionPointsInspection", "unused"})
+@IfBuildProperty(name = "feature.cetp.enabled", stringValue = "true", enableIfMissing = true)
 @ApplicationScoped
 @Startup
 public class CETPServer {
@@ -74,7 +77,13 @@ public class CETPServer {
 
     // Make sure subscription manager get onStart first, before CETPServer at least!
     void onStart(@Observes @Priority(5200) StartupEvent ev) {
-        run();
+        StopWatch watch = StopWatch.createStarted();
+        try {
+            run();
+        } finally {
+            watch.stop();
+            log.info(String.format("%s %s took %s", "CETPServer", "run", watch.formatTime()));
+        }
     }
 
     void onShutdown(@Observes ShutdownEvent ev) {

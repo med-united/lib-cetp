@@ -1,9 +1,14 @@
 package de.health.service.cetp.konnektorconfig;
 
+import de.health.service.cetp.KonnektorsConfigs;
 import de.health.service.cetp.config.KonnektorConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import de.health.service.config.api.UserRuntimeConfig;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import lombok.Setter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -25,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -43,8 +49,9 @@ public class FSConfigService implements KonnektorConfigService {
     @ConfigProperty(name = "ere.per.konnektor.config.folder")
     String configFolder;
 
-    ISubscriptionConfig subscriptionConfig;
-    UserRuntimeConfig userRuntimeConfig;
+    private final Map<String, KonnektorConfig> hostToKonnektorConfig;
+    private final ISubscriptionConfig subscriptionConfig;
+    private final UserRuntimeConfig userRuntimeConfig;
 
     @Inject
     public FSConfigService(
@@ -53,6 +60,18 @@ public class FSConfigService implements KonnektorConfigService {
     ) {
         this.subscriptionConfig = subscriptionConfig;
         this.userRuntimeConfig = userRuntimeConfig;
+
+        hostToKonnektorConfig = new ConcurrentHashMap<>();
+    }
+
+    public void onStart(@Observes @Priority(10) StartupEvent ev) {
+        hostToKonnektorConfig.putAll(loadConfigs());
+    }
+
+    @Produces
+    @KonnektorsConfigs
+    public Map<String, KonnektorConfig> configMap() {
+        return hostToKonnektorConfig;
     }
 
     @Override

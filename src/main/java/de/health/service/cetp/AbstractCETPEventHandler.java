@@ -1,6 +1,6 @@
 package de.health.service.cetp;
 
-import de.health.service.cetp.cardlink.CardlinkWebsocketClient;
+import de.health.service.cetp.cardlink.CardlinkClient;
 import de.health.service.cetp.domain.eventservice.event.CetpEvent;
 import de.health.service.cetp.domain.eventservice.event.CetpParameter;
 import de.health.service.cetp.domain.eventservice.event.DecodeResult;
@@ -19,10 +19,10 @@ public abstract class AbstractCETPEventHandler extends ChannelInboundHandlerAdap
 
     private static final Logger log = Logger.getLogger(AbstractCETPEventHandler.class.getName());
 
-    protected CardlinkWebsocketClient cardlinkWebsocketClient;
+    protected CardlinkClient cardlinkClient;
 
-    public AbstractCETPEventHandler(CardlinkWebsocketClient cardlinkWebsocketClient) {
-        this.cardlinkWebsocketClient = cardlinkWebsocketClient;
+    public AbstractCETPEventHandler(CardlinkClient cardlinkClient) {
+        this.cardlinkClient = cardlinkClient;
     }
 
     @Override
@@ -47,10 +47,10 @@ public abstract class AbstractCETPEventHandler extends ChannelInboundHandlerAdap
         CetpEvent event = decodeResult.getEvent();
         if (event.getTopic().equals(getTopicName())) {
             try {
-                cardlinkWebsocketClient.connect();
+                cardlinkClient.connect();
                 processEvent(decodeResult.getConfigurations(), getParams(event));
             } finally {
-                cardlinkWebsocketClient.close();
+                cardlinkClient.close();
                 MDC.clear();
             }
         }

@@ -2,12 +2,14 @@ package de.health.service.check;
 
 import de.health.service.cetp.CETPServer;
 import de.health.service.config.api.IRuntimeConfig;
+import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.Map;
 
 @ApplicationScoped
+@IfBuildProperty(name = "feature.cetp.enabled", stringValue = "true", enableIfMissing = true)
 public class CetpServerCheck implements Check {
 
     @Inject
