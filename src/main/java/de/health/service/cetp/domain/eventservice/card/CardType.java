@@ -28,8 +28,8 @@ public enum CardType {
 
     public static CardType from(String value) {
         return Arrays.stream(CardType.values())
-            .filter(t -> t.getValue().equals(value))
+            .filter(t -> t.getValue().equalsIgnoreCase(value))
             .findFirst()
-            .orElse(null);
+            .orElseThrow(() -> new IllegalArgumentException(String.format("Unknown CardType: '%s'", value)));
     }
 }
