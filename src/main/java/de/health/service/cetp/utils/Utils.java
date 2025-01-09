@@ -1,8 +1,5 @@
 package de.health.service.cetp.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,11 +16,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class Utils {
 
-    private static final Logger log = LoggerFactory.getLogger(Utils.class);
+    private final static Logger log = Logger.getLogger(Utils.class.getName());
 
     private Utils() {
     }

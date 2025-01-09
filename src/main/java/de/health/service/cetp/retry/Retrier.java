@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,7 +32,7 @@ public class Retrier {
         Predicate<T> predicate
     ) {
         try {
-            return callAndRetryEx(retryMillis, retryPeriodMs, false, action, predicate);
+            return callAndRetryEx(retryMillis, retryPeriodMs, false, action, () -> false, predicate);
         } catch (Exception e) {
             return null;
         }
@@ -42,6 +43,7 @@ public class Retrier {
         int retryPeriodMs,
         boolean keepException,
         RetryAction<T> action,
+        Supplier<Boolean> blocker,
         Predicate<T> predicate
     ) throws Exception {
         SafeInfo<T> safeInfo = safeExecute(action);
@@ -61,17 +63,23 @@ public class Retrier {
                 if (delta + timeoutMs > retryPeriodMs) {
                     break;
                 }
-                try {
-                    TimeUnit.MILLISECONDS.sleep(timeoutMs);
-                } catch (InterruptedException ignored) {
+                sleepMs(timeoutMs);
+                if (blocker.get() == null || !blocker.get()) {
+                    safeInfo = safeExecute(action);
                 }
-                safeInfo = safeExecute(action);
             }
         }
         if (keepException && safeInfo.result == null && safeInfo.exception != null) {
             throw safeInfo.exception;
         } else {
             return safeInfo.result;
+        }
+    }
+
+    private static void sleepMs(int value) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(value);
+        } catch (InterruptedException ignored) {
         }
     }
 
