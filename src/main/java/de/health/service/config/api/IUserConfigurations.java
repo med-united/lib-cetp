@@ -8,7 +8,7 @@ import java.util.Enumeration;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public interface IUserConfigurations {
+public interface IUserConfigurations extends IKonnektorUrlConfig {
 
     String getBasicAuthUsername();
 
@@ -29,8 +29,6 @@ public interface IUserConfigurations {
     String getErixaApiKey();
 
     String getMuster16TemplateProfile();
-
-    String getConnectorBaseURL();
 
     String getMandantId();
 

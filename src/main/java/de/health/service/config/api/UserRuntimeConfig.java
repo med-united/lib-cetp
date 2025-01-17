@@ -1,9 +1,7 @@
 package de.health.service.config.api;
 
 @SuppressWarnings("unused")
-public interface UserRuntimeConfig {
-
-    String getConnectorBaseURL();
+public interface UserRuntimeConfig extends IKonnektorUrlConfig {
 
     String getConnectorVersion();
 

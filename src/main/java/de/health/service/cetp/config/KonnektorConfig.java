@@ -39,8 +39,7 @@ public class KonnektorConfig {
     }
 
     public String getHost() {
-        String connectorBaseURL = userConfigurations.getConnectorBaseURL();
-        return connectorBaseURL == null ? null : connectorBaseURL.split("//")[1];
+        return userConfigurations.getKonnektorHost();
     }
 }
 

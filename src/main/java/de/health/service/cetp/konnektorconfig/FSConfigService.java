@@ -98,8 +98,7 @@ public class FSConfigService implements KonnektorConfigService {
 
     private String getKonnectorKey(KonnektorConfig config) {
         String konnectorHost = config.getHost();
-        URI connectorBaseURI = URI.create(userRuntimeConfig.getConnectorBaseURL());
-        String host = konnectorHost == null ? connectorBaseURI.getHost() : konnectorHost;
+        String host = konnectorHost == null ? userRuntimeConfig.getKonnektorHost() : konnectorHost;
         return String.format("%d_%s", config.getCetpPort(), host);
     }
 
