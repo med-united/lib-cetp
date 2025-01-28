@@ -2,6 +2,7 @@ package de.health.service.cetp.retry;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -32,7 +33,7 @@ public class Retrier {
         Predicate<T> predicate
     ) {
         try {
-            return callAndRetryEx(retryMillis, retryPeriodMs, false, action, () -> false, predicate);
+            return callAndRetryEx(retryMillis, retryPeriodMs, false, Set.of(), action, () -> false, predicate);
         } catch (Exception e) {
             return null;
         }
@@ -42,19 +43,20 @@ public class Retrier {
         List<Integer> retryMillis,
         int retryPeriodMs,
         boolean keepException,
+        Set<String> immediateSet,
         RetryAction<T> action,
         Supplier<Boolean> blocker,
-        Predicate<T> predicate
+        Predicate<T> stopCondition
     ) throws Exception {
         SafeInfo<T> safeInfo = safeExecute(action);
-        if (safeInfo.result != null && predicate.test(safeInfo.result)) {
+        if (stopByResultCondition(safeInfo, stopCondition)) {
             return safeInfo.result;
         }
         List<Integer> retries = retryMillis.stream().filter(Objects::nonNull).sorted().toList();
         if (!retries.isEmpty()) {
             int k = 0;
             long start = System.currentTimeMillis();
-            while (safeInfo.result == null || !predicate.test(safeInfo.result)) {
+            while (!immediateReturn(immediateSet, safeInfo) && !stopByResultCondition(safeInfo, stopCondition)) {
                 Integer timeoutMs = retries.get(k++);
                 if (k >= retries.size()) {
                     k = retries.size() - 1;
@@ -74,6 +76,29 @@ public class Retrier {
         } else {
             return safeInfo.result;
         }
+    }
+
+    private static <T> boolean stopByResultCondition(SafeInfo<T> safeInfo, Predicate<T> stopCondition) {
+        if (safeInfo.result == null) {
+            return false;
+        }
+        return stopCondition.test(safeInfo.result);
+    }
+
+    private static <T> boolean immediateReturn(Set<String> immediate, SafeInfo<T> safeInfo) {
+        if (safeInfo.result != null) {
+            return true;
+        }
+        Exception ex = safeInfo.exception;
+        if (ex == null) {
+            return false;
+        }
+        String message = ex.getMessage();
+        if (message == null) {
+            return false;
+        }
+        // todo find better solution, issue is lib-cetp can't import project modules so unified approach is needed
+        return immediate.stream().anyMatch(message::contains);
     }
 
     private static void sleepMs(int value) {
