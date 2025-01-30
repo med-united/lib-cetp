@@ -79,26 +79,15 @@ public class Retrier {
     }
 
     private static <T> boolean stopByResultCondition(SafeInfo<T> safeInfo, Predicate<T> stopCondition) {
-        if (safeInfo.result == null) {
-            return false;
-        }
-        return stopCondition.test(safeInfo.result);
+        return safeInfo.result != null && stopCondition.test(safeInfo.result);
     }
 
     private static <T> boolean immediateReturn(Set<String> immediate, SafeInfo<T> safeInfo) {
-        if (safeInfo.result != null) {
-            return true;
-        }
-        Exception ex = safeInfo.exception;
-        if (ex == null) {
-            return false;
-        }
-        String message = ex.getMessage();
-        if (message == null) {
+        if (safeInfo.exception == null || safeInfo.exception.getMessage() == null) {
             return false;
         }
         // todo find better solution, issue is lib-cetp can't import project modules so unified approach is needed
-        return immediate.stream().anyMatch(message::contains);
+        return immediate.stream().anyMatch(safeInfo.exception.getMessage()::contains);
     }
 
     private static void sleepMs(int value) {

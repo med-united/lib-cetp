@@ -1,33 +1,52 @@
 package de.health.service.cetp.utils;
 
 import de.health.service.cetp.retry.Retrier;
+import lombok.ToString;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class RetrierTest {
 
+    @ToString(of = {"value"})
+    private static class Result {
+        String value;
+
+        public Result(String value) {
+            this.value = value;
+        }
+    }
+
     private static class Tester {
-        boolean testFunc() {
-            return false;
+        private final Result result;
+
+        public Tester(Result result) {
+            this.result = result;
+        }
+
+        Result testFunc() {
+            if (result.value.contains("insurantid")) {
+                throw new IllegalStateException(result.value);
+            }
+            return result;
         }
     }
 
     @Test
     public void testFuncRetriesCorrectlyWithinRetryPeriod() {
-        Tester t = mock(Tester.class);
-        when(t.testFunc()).thenThrow(new IllegalStateException("x-insurantid is not found"));
+        String badValue = "badValue";
+        Tester t = spy(new Tester(new Result(badValue)));
 
         int repeat = 3;
-        Boolean result = null;
+        Result result = null;
         Exception ex = null;
         try {
             result = Retrier.callAndRetryEx(
@@ -37,23 +56,23 @@ public class RetrierTest {
                 Set.of(),
                 t::testFunc,
                 () -> false,
-                bool -> bool != null && bool
+                res -> !res.value.equals(badValue)
             );
         } catch (Exception e) {
             ex = e;
         }
-        assertNotNull(ex);
-        assertNull(result);
+        assertNull(ex);
+        assertNotNull(result);
         verify(t, times(repeat + 1)).testFunc();
     }
 
     @Test
     public void testFuncDidntRetryDueToImmediateCondition() {
-        Tester t = mock(Tester.class);
-        when(t.testFunc()).thenThrow(new IllegalStateException("x-insurantid is not found"));
+        String norFound = "x-insurantid is not found";
+        Tester t = spy(new Tester(new Result(norFound)));
 
         int repeat = 30;
-        Boolean result = null;
+        Result result = null;
         Exception ex = null;
         try {
             result = Retrier.callAndRetryEx(
@@ -63,7 +82,7 @@ public class RetrierTest {
                 Set.of("not found"),
                 t::testFunc,
                 () -> false,
-                bool -> bool != null && bool
+                Objects::nonNull
             );
         } catch (Exception e) {
             ex = e;
