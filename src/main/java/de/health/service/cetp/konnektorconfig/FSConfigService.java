@@ -3,6 +3,7 @@ package de.health.service.cetp.konnektorconfig;
 import de.health.service.cetp.KonnektorsConfigs;
 import de.health.service.cetp.config.KonnektorConfig;
 import de.health.service.config.api.ISubscriptionConfig;
+import de.health.service.config.api.IUserConfigurations;
 import de.health.service.config.api.UserRuntimeConfig;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;
@@ -44,6 +45,7 @@ public class FSConfigService implements KonnektorConfigService {
     private final static Logger log = Logger.getLogger(FSConfigService.class.getName());
 
     public static final String PROPERTIES_EXT = ".properties";
+    public static final String CONFIG_DELIMETER = "<sep>";
 
     @Setter
     @ConfigProperty(name = "ere.per.konnektor.config.folder")
@@ -98,8 +100,14 @@ public class FSConfigService implements KonnektorConfigService {
 
     private String getKonnectorKey(KonnektorConfig config) {
         String konnectorHost = config.getHost();
-        String host = konnectorHost == null ? userRuntimeConfig.getKonnektorHost() : konnectorHost;
-        return String.format("%d_%s", config.getCetpPort(), host);
+        if (konnectorHost == null) {
+            konnectorHost = userRuntimeConfig.getKonnektorHost();
+        }
+        String workplaceId = config.getUserConfigurations().getWorkplaceId();
+        if (workplaceId == null) {
+            workplaceId = userRuntimeConfig.getWorkplaceId();
+        }
+        return String.format("%s" + CONFIG_DELIMETER + "%s", konnectorHost, workplaceId);
     }
 
     public List<KonnektorConfig> readFromPath(String path) {
@@ -119,13 +127,14 @@ public class FSConfigService implements KonnektorConfigService {
     }
 
     private KonnektorConfig fromFolder(File folder) {
-        Optional<File> userPropertiesOpt = Arrays.stream(folder.listFiles())
+        File[] files = folder.listFiles();
+        Optional<File> userPropertiesOpt = Optional.ofNullable(files).flatMap(list -> Arrays.stream(list)
             .filter(f -> f.getName().endsWith(PROPERTIES_EXT))
-            .max(Comparator.comparingLong(File::lastModified));
+            .max(Comparator.comparingLong(File::lastModified)));
 
-        Optional<File> subscriptionFileOpt = Arrays.stream(folder.listFiles())
+        Optional<File> subscriptionFileOpt = Optional.ofNullable(files).flatMap(list -> Arrays.stream(list)
             .filter(f -> !f.getName().startsWith(FAILED) && !f.getName().endsWith(PROPERTIES_EXT))
-            .max(Comparator.comparingLong(File::lastModified));
+            .max(Comparator.comparingLong(File::lastModified)));
 
         if (userPropertiesOpt.isPresent()) {
             File actualSubscription = userPropertiesOpt.get();
@@ -174,7 +183,7 @@ public class FSConfigService implements KonnektorConfigService {
 
     @Override
     public void cleanUpSubscriptionFiles(KonnektorConfig konnektorConfig, String subscriptionId) {
-        Arrays.stream(konnektorConfig.getFolder().listFiles())
+        Optional.ofNullable(konnektorConfig.getFolder().listFiles()).ifPresent(files -> Arrays.stream(files)
             .filter(file -> !file.getName().equals(subscriptionId) && !file.getName().endsWith(PROPERTIES_EXT))
             .forEach(file -> {
                 boolean deleted = file.delete();
@@ -183,7 +192,7 @@ public class FSConfigService implements KonnektorConfigService {
                     log.log(Level.SEVERE, msg);
                     file.renameTo(new File(String.format("%s_DELETING", file.getAbsolutePath())));
                 }
-            });
+            }));
     }
 
     private static void writeFile(String absolutePath, String content) throws IOException {

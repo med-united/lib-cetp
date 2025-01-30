@@ -97,7 +97,7 @@ public class CETPServer {
     }
 
     public void run() {
-        for (KonnektorConfig config : subscriptionManager.getKonnektorConfigs(null)) {
+        for (KonnektorConfig config : subscriptionManager.getKonnektorConfigs(null, null)) {
             log.info("Running CETP Server on port " + config.getCetpPort() + " for cardlink server: " + config.getCardlinkEndpoint());
             runServer(config);
         }

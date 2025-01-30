@@ -98,7 +98,7 @@ public class SubscriptionManager {
         }
         List<Integer> retryMillis = List.of(200);
         int intervalMs = subscriptionConfig.getCetpSubscriptionsMaintenanceRetryIntervalMs();
-        List<Future<Boolean>> futures = getKonnektorConfigs(null).stream().map(kc -> threadPool.submit(() -> {
+        List<Future<Boolean>> futures = getKonnektorConfigs(null, null).stream().map(kc -> threadPool.submit(() -> {
             Inet4Address meInSameSubnet = LocalAddressInSameSubnetFinder.findLocalIPinSameSubnet(konnektorToIp4(kc.getHost()));
             String eventToHost = (meInSameSubnet != null) ? meInSameSubnet.getHostAddress() : defaultSender;
             if (eventToHost == null) {
@@ -268,10 +268,11 @@ public class SubscriptionManager {
         }).filter(p -> !p.getKey()).map(Pair::getValue).toList();
     }
 
-    public Collection<KonnektorConfig> getKonnektorConfigs(String host) {
-        return host == null
-            ? konnektorsConfigs.values()
-            : konnektorsConfigs.entrySet().stream().filter(entry -> entry.getKey().contains(host)).map(Map.Entry::getValue).toList();
+    public Collection<KonnektorConfig> getKonnektorConfigs(String host, String workplaceId) {
+        return konnektorsConfigs.entrySet().stream()
+            .filter(entry -> host == null || entry.getKey().contains(host))
+            .filter(entry -> workplaceId == null || entry.getKey().contains(workplaceId))
+            .map(Map.Entry::getValue).toList();
     }
 
     private boolean subscribe(
@@ -307,11 +308,12 @@ public class SubscriptionManager {
     public List<String> manage(
         UserRuntimeConfig runtimeConfig,
         String host,
+        String workplaceId,
         String eventToHost,
         boolean forceCetp,
         boolean subscribe
     ) {
-        Collection<KonnektorConfig> konnektorConfigs = getKonnektorConfigs(host);
+        Collection<KonnektorConfig> konnektorConfigs = getKonnektorConfigs(host, workplaceId);
         List<String> statuses = konnektorConfigs.stream().map(kc -> {
                 Semaphore semaphore = kc.getSemaphore();
                 if (semaphore.tryAcquire()) {
