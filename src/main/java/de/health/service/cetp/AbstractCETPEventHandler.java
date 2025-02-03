@@ -7,7 +7,6 @@ import de.health.service.cetp.domain.eventservice.event.DecodeResult;
 import de.health.service.config.api.IUserConfigurations;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.jboss.logging.MDC;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -51,7 +50,6 @@ public abstract class AbstractCETPEventHandler extends ChannelInboundHandlerAdap
                 processEvent(decodeResult.getConfigurations(), getParams(event));
             } finally {
                 cardlinkClient.close();
-                MDC.clear();
             }
         }
     }
