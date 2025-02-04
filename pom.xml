@@ -49,24 +49,6 @@
             <artifactId>quarkus-scheduler-api</artifactId>
             <version>3.17.2</version>
             <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>jboss-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logmanager</groupId>
-                    <artifactId>jboss-logmanager</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>jboss-logging-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.slf4j</groupId>
-                    <artifactId>slf4j-jboss-logmanager</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -96,18 +78,6 @@
                 <exclusion>
                     <groupId>org.mockito</groupId>
                     <artifactId>mockito-subclass</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logmanager</groupId>
-                    <artifactId>jboss-logmanager</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>commons-logging-jboss-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>jboss-logging</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
