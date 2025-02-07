@@ -9,9 +9,9 @@ import de.health.service.cetp.domain.fault.Error;
 import de.health.service.cetp.konnektorconfig.KonnektorConfigService;
 import de.health.service.cetp.retry.Retrier;
 import de.health.service.cetp.utils.LocalAddressInSameSubnetFinder;
+import de.health.service.config.api.IFeatureConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import de.health.service.config.api.UserRuntimeConfig;
-import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.annotation.Priority;
@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 import static de.health.service.cetp.utils.Utils.printException;
 
 @SuppressWarnings({"CdiInjectionPointsInspection", "unused"})
-@IfBuildProperty(name = "feature.cetp.enabled", stringValue = "true", enableIfMissing = true)
 @ApplicationScoped
 public class SubscriptionManager {
 
@@ -55,6 +54,7 @@ public class SubscriptionManager {
     
     public static final String FAILED = "failed";
 
+    IFeatureConfig featureConfig;
     ISubscriptionConfig subscriptionConfig;
     UserRuntimeConfig userRuntimeConfig;
     IKonnektorClient konnektorClient;
@@ -68,11 +68,13 @@ public class SubscriptionManager {
 
     @Inject
     public SubscriptionManager(
+        IFeatureConfig featureConfig,
         ISubscriptionConfig subscriptionConfig,
         UserRuntimeConfig userRuntimeConfig,
         IKonnektorClient konnektorClient,
         KonnektorConfigService kcService
     ) {
+        this.featureConfig = featureConfig;
         this.subscriptionConfig = subscriptionConfig;
         this.userRuntimeConfig = userRuntimeConfig;
         this.konnektorClient = konnektorClient;
@@ -80,9 +82,13 @@ public class SubscriptionManager {
     }
 
     public void onStart(@Observes @Priority(20) StartupEvent ev) {
-        log.info("SubscriptionManager starting..");
-        threadPool = Executors.newFixedThreadPool(konnektorsConfigs.size());
-        log.info("SubscriptionManager started");
+        if (featureConfig.isCetpEnabled()) {
+            log.info("SubscriptionManager starting..");
+            threadPool = Executors.newFixedThreadPool(konnektorsConfigs.size());
+            log.info("SubscriptionManager started");
+        } else {
+            log.warning("CETP feature is disabled, please check 'feature.cetp.enabled' property");
+        }
     }
     
     @Scheduled(
@@ -92,6 +98,9 @@ public class SubscriptionManager {
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP
     )
     void subscriptionsMaintenance() {
+        if (!featureConfig.isCetpEnabled()) {
+            return;
+        }
         String defaultSender = subscriptionConfig.getDefaultEventToHost();
         if (defaultSender == null) {
             log.log(Level.WARNING, "You did not set 'cetp.subscriptions.event-to-host' property. Will have no fallback if Konnektor is not found to be in the same subnet");
@@ -138,7 +147,7 @@ public class SubscriptionManager {
         }
     }
 
-    public boolean renewSubscriptions(String eventToHost, KonnektorConfig kc) {
+    private boolean renewSubscriptions(String eventToHost, KonnektorConfig kc) {
         Semaphore semaphore = kc.getSemaphore();
         if (semaphore.tryAcquire()) {
             try {
@@ -191,7 +200,7 @@ public class SubscriptionManager {
         }
     }
 
-    public boolean renew(
+    private boolean renew(
         UserRuntimeConfig runtimeConfig,
         KonnektorConfig konnektorConfig,
         Subscription type,
@@ -245,7 +254,7 @@ public class SubscriptionManager {
         );
     }
 
-    public List<String> drop(
+    private List<String> drop(
         UserRuntimeConfig runtimeConfig,
         List<Subscription> subscriptions
     ) throws CetpFault {
@@ -313,6 +322,9 @@ public class SubscriptionManager {
         boolean forceCetp,
         boolean subscribe
     ) {
+        if (!featureConfig.isCetpEnabled()) {
+            return List.of("CETP feature is disabled");
+        }
         Collection<KonnektorConfig> konnektorConfigs = getKonnektorConfigs(host, workplaceId);
         List<String> statuses = konnektorConfigs.stream().map(kc -> {
                 Semaphore semaphore = kc.getSemaphore();

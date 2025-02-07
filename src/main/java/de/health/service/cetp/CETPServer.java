@@ -2,6 +2,7 @@ package de.health.service.cetp;
 
 import de.health.service.cetp.codec.CETPEventDecoderFactory;
 import de.health.service.cetp.config.KonnektorConfig;
+import de.health.service.config.api.IFeatureConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -18,7 +19,6 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.EventExecutorGroup;
-import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
@@ -38,7 +38,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @SuppressWarnings({"CdiInjectionPointsInspection", "unused"})
-@IfBuildProperty(name = "feature.cetp.enabled", stringValue = "true", enableIfMissing = true)
 @ApplicationScoped
 @Startup
 public class CETPServer {
@@ -53,6 +52,7 @@ public class CETPServer {
     @Getter
     private final Map<String, String> startedOnPorts = new HashMap<>();
 
+    IFeatureConfig featureConfig;
     ISubscriptionConfig subscriptionConfig;
     SubscriptionManager subscriptionManager;
     ISecretsManager secretsManager;
@@ -62,12 +62,14 @@ public class CETPServer {
 
     @Inject
     public CETPServer(
+        IFeatureConfig featureConfig,
         ISubscriptionConfig subscriptionConfig,
         SubscriptionManager subscriptionManager,
         CETPEventDecoderFactory eventDecoderFactory,
         CETPEventHandlerFactory eventHandlerFactory,
         ISecretsManager secretsManager
     ) {
+        this.featureConfig = featureConfig;
         this.subscriptionConfig = subscriptionConfig;
         this.subscriptionManager = subscriptionManager;
         this.eventDecoderFactory = eventDecoderFactory;
@@ -77,12 +79,16 @@ public class CETPServer {
 
     // Make sure subscription manager get onStart first, before CETPServer at least!
     void onStart(@Observes @Priority(5200) StartupEvent ev) {
-        StopWatch watch = StopWatch.createStarted();
-        try {
-            run();
-        } finally {
-            watch.stop();
-            log.info(String.format("%s %s took %s", "CETPServer", "run", watch.formatTime()));
+        if (featureConfig.isCetpEnabled()) {
+            StopWatch watch = StopWatch.createStarted();
+            try {
+                run();
+            } finally {
+                watch.stop();
+                log.info(String.format("%s %s took %s", "CETPServer", "run", watch.formatTime()));
+            }
+        } else {
+            log.warning("CETP feature is disabled, please check 'feature.cetp.enabled' property");
         }
     }
 
@@ -96,7 +102,7 @@ public class CETPServer {
         }
     }
 
-    public void run() {
+    private void run() {
         for (KonnektorConfig config : subscriptionManager.getKonnektorConfigs(null, null)) {
             log.info("Running CETP Server on port " + config.getCetpPort() + " for cardlink server: " + config.getCardlinkEndpoint());
             runServer(config);
