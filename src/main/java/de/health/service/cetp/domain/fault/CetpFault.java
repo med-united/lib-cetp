@@ -2,10 +2,14 @@ package de.health.service.cetp.domain.fault;
 
 import lombok.Getter;
 
-@SuppressWarnings("unused")
+import java.io.Serial;
+
 @Getter
 public class CetpFault extends Exception {
 
+    @Serial
+    private static final long serialVersionUID = -1636108370897458787L;
+    
     private Error faultInfo;
 
     public CetpFault() {
