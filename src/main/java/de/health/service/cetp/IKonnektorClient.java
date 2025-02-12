@@ -5,6 +5,7 @@ import de.health.service.cetp.domain.SubscriptionResult;
 import de.health.service.cetp.domain.eventservice.Subscription;
 import de.health.service.cetp.domain.eventservice.card.Card;
 import de.health.service.cetp.domain.eventservice.card.CardType;
+import de.health.service.cetp.domain.eventservice.cardTerminal.CardTerminal;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.config.api.UserRuntimeConfig;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,6 +33,8 @@ public interface IKonnektorClient {
     ) throws CetpFault;
 
     List<Card> getCards(UserRuntimeConfig runtimeConfig, CardType cardType) throws CetpFault;
+
+    List<CardTerminal> getCardTerminals(UserRuntimeConfig runtimeConfig) throws CetpFault;
 
     Pair<X509Certificate, Boolean> getSmcbX509Certificate(
         String smcbHandle,
