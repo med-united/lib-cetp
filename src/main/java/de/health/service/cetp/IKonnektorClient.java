@@ -8,7 +8,6 @@ import de.health.service.cetp.domain.eventservice.card.CardType;
 import de.health.service.cetp.domain.eventservice.cardTerminal.CardTerminal;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.config.api.UserRuntimeConfig;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -36,10 +35,7 @@ public interface IKonnektorClient {
 
     List<CardTerminal> getCardTerminals(UserRuntimeConfig runtimeConfig) throws CetpFault;
 
-    Pair<X509Certificate, Boolean> getSmcbX509Certificate(
-        String smcbHandle,
-        UserRuntimeConfig userRuntimeConfig
-    ) throws CetpFault;
+    X509Certificate getSmcbX509Certificate(UserRuntimeConfig userRuntimeConfig, String smcbHandle) throws CetpFault;
 
     String getTelematikId(UserRuntimeConfig userRuntimeConfig, String smcbHandle);
 
