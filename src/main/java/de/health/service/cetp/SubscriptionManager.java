@@ -147,7 +147,7 @@ public class SubscriptionManager {
         }
     }
 
-    private boolean renewSubscriptions(String eventToHost, KonnektorConfig kc) {
+    public boolean renewSubscriptions(String eventToHost, KonnektorConfig kc) {
         Semaphore semaphore = kc.getSemaphore();
         if (semaphore.tryAcquire()) {
             try {
@@ -277,6 +277,7 @@ public class SubscriptionManager {
         }).filter(p -> !p.getKey()).map(Pair::getValue).toList();
     }
 
+    // konnektorsConfigs KEY: "konnektorHost<sep>workplaceId"
     public Collection<KonnektorConfig> getKonnektorConfigs(String host, String workplaceId) {
         return konnektorsConfigs.entrySet().stream()
             .filter(entry -> host == null || entry.getKey().contains(host))
