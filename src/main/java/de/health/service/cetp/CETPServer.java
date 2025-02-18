@@ -50,7 +50,7 @@ public class CETPServer {
     List<EventLoopGroup> workerGroups = new ArrayList<>();
 
     @Getter
-    private final Map<String, String> startedOnPorts = new HashMap<>();
+    private final Map<String, Object> startedOnPorts = new HashMap<>();
 
     IFeatureConfig featureConfig;
     ISubscriptionConfig subscriptionConfig;

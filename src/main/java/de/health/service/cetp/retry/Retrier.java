@@ -43,7 +43,7 @@ public class Retrier {
         List<Integer> retryMillis,
         int retryPeriodMs,
         boolean keepException,
-        Set<String> immediateSet,
+        Set<String> noRetryErrors,
         RetryAction<T> action,
         Supplier<Boolean> blocker,
         Predicate<T> stopCondition
@@ -56,7 +56,7 @@ public class Retrier {
         if (!retries.isEmpty()) {
             int k = 0;
             long start = System.currentTimeMillis();
-            while (!immediateReturn(immediateSet, safeInfo) && !stopByResultCondition(safeInfo, stopCondition)) {
+            while (!immediateReturn(noRetryErrors, safeInfo) && !stopByResultCondition(safeInfo, stopCondition)) {
                 Integer timeoutMs = retries.get(k++);
                 if (k >= retries.size()) {
                     k = retries.size() - 1;

@@ -25,7 +25,7 @@ public class HealthChecker {
             anyChecks500 ? "DOWN" : "UP",
             checks.stream().map(check -> {
                 Status status;
-                Map<String, String> data = new HashMap<>();
+                Map<String, Object> data = new HashMap<>();
                 try {
                     data = check.getData(runtimeConfig);
                     status = check.getStatus(runtimeConfig);

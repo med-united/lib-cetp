@@ -101,11 +101,11 @@ public class FSConfigService implements KonnektorConfigService {
     private String getKonnectorKey(KonnektorConfig config) {
         String konnectorHost = config.getHost();
         if (konnectorHost == null) {
-            konnectorHost = userRuntimeConfig.getKonnektorHost();
+            throw new IllegalStateException("KonnektorConfig 'host' is missed");
         }
         String workplaceId = config.getUserConfigurations().getWorkplaceId();
         if (workplaceId == null) {
-            workplaceId = userRuntimeConfig.getWorkplaceId();
+            throw new IllegalStateException("KonnektorConfig 'workplaceId' is missed");
         }
         return String.format("%s" + CONFIG_DELIMETER + "%s", konnectorHost, workplaceId);
     }

@@ -26,8 +26,8 @@ public class CetpServerCheck implements Check {
     @Override
     public Status getStatus(IRuntimeConfig runtimeConfig) {
         if (featureConfig.isCetpEnabled()) {
-            Map<String, String> startedOnPorts = cetpServer.getStartedOnPorts();
-            boolean someFailed = startedOnPorts.values().stream().anyMatch(s -> s.startsWith("FAILED"));
+            Map<String, Object> startedOnPorts = cetpServer.getStartedOnPorts();
+            boolean someFailed = startedOnPorts.values().stream().anyMatch(s -> String.valueOf(s).startsWith("FAILED"));
             return someFailed || startedOnPorts.isEmpty() ? Status.Down503 : Status.Up200;
         } else {
             return Status.Down503;
@@ -35,7 +35,7 @@ public class CetpServerCheck implements Check {
     }
 
     @Override
-    public Map<String, String> getData(IRuntimeConfig runtimeConfig) {
+    public Map<String, Object> getData(IRuntimeConfig runtimeConfig) {
         if (featureConfig.isCetpEnabled()) {
             return cetpServer.getStartedOnPorts();
         } else {

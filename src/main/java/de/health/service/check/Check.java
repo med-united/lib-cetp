@@ -23,5 +23,5 @@ public interface Check {
         }
     }
 
-    Map<String, String> getData(IRuntimeConfig runtimeConfig);
+    Map<String, Object> getData(IRuntimeConfig runtimeConfig);
 }
