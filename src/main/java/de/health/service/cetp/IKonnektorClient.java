@@ -35,7 +35,7 @@ public interface IKonnektorClient {
 
     List<CardTerminal> getCardTerminals(UserRuntimeConfig runtimeConfig) throws CetpFault;
 
-    X509Certificate getSmcbX509Certificate(UserRuntimeConfig userRuntimeConfig, String smcbHandle) throws CetpFault;
+    CertificateInfo getSmcbX509Certificate(UserRuntimeConfig userRuntimeConfig, String smcbHandle) throws CetpFault;
 
     String getTelematikId(UserRuntimeConfig userRuntimeConfig, String smcbHandle);
 
