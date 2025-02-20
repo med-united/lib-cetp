@@ -17,7 +17,7 @@ public class CertificateInfo {
     private final X509Certificate certificate;
     private final String signatureType;
 
-    private CertificateInfo(X509Certificate certificate, String signatureType) {
+    public CertificateInfo(X509Certificate certificate, String signatureType) {
         this.certificate = certificate;
         this.signatureType = signatureType;
     }
