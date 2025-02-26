@@ -101,7 +101,7 @@ public class Retrier {
         try {
             return new SafeInfo<>(action.execute(), null);
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Error while executing retryable action", e);
+            log.log(Level.SEVERE, "Error while executing retryable action", getOriginalCause(e));
             return new SafeInfo<>(null, e);
         } catch (Throwable t) {
             // Log in case that happens in an unchecked executor task
@@ -109,5 +109,13 @@ public class Retrier {
             log.log(Level.SEVERE, "Caught throwable!!! Panic!", t);
             throw t;
         }
+    }
+
+    private static Throwable getOriginalCause(Exception exception) {
+        Throwable cause = exception;
+        while (cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 }
