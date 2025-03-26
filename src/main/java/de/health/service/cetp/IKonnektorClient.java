@@ -9,7 +9,6 @@ import de.health.service.cetp.domain.eventservice.cardTerminal.CardTerminal;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.config.api.UserRuntimeConfig;
 
-import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +16,8 @@ import java.util.Map;
 public interface IKonnektorClient {
 
     String CARD_INSERTED_TOPIC = "CARD/INSERTED";
+
+    boolean isReady();
 
     List<Subscription> getSubscriptions(UserRuntimeConfig runtimeConfig) throws CetpFault;
 

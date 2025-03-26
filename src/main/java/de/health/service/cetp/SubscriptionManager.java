@@ -98,40 +98,39 @@ public class SubscriptionManager {
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP
     )
     void subscriptionsMaintenance() {
-        if (!featureConfig.isCetpEnabled()) {
-            return;
-        }
-        String defaultSender = subscriptionConfig.getDefaultEventToHost();
-        if (defaultSender == null) {
-            log.log(Level.WARNING, "You did not set 'cetp.subscriptions.event-to-host' property. Will have no fallback if Konnektor is not found to be in the same subnet");
-        }
-        List<Integer> retryMillis = List.of(200);
-        int intervalMs = subscriptionConfig.getCetpSubscriptionsMaintenanceRetryIntervalMs();
-        List<Future<Boolean>> futures = getKonnektorConfigs(null, null).stream().map(kc -> threadPool.submit(() -> {
-            Inet4Address meInSameSubnet = LocalAddressInSameSubnetFinder.findLocalIPinSameSubnet(konnektorToIp4(kc.getHost()));
-            String eventToHost = (meInSameSubnet != null) ? meInSameSubnet.getHostAddress() : defaultSender;
-            if (eventToHost == null) {
-                log.log(Level.INFO, "Can't maintain subscription. Don't know my own address to tell konnektor about it");
-                return false;
+        if (featureConfig.isCetpEnabled() && konnektorClient.isReady()) {
+            String defaultSender = subscriptionConfig.getDefaultEventToHost();
+            if (defaultSender == null) {
+                log.log(Level.WARNING, "You did not set 'cetp.subscriptions.event-to-host' property. Will have no fallback if Konnektor is not found to be in the same subnet");
             }
-            Boolean result = Retrier.callAndRetry(
-                retryMillis,
-                intervalMs,
-                () -> renewSubscriptions(eventToHost, kc),
-                bool -> bool
-            );
-            if (result == null || !result) {
-                String msg = String.format(
-                    "[%s] Subscriptions maintenance is failed within %d ms retry", kc.getHost(), intervalMs);
-                log.warning(msg);
-            }
-            return result;
-        })).toList();
-        for (Future<Boolean> future : futures) {
-            try {
-                future.get();
-            } catch (Throwable e) {
-                log.log(Level.SEVERE, "Subscriptions maintenance error", e);
+            List<Integer> retryMillis = List.of(200);
+            int intervalMs = subscriptionConfig.getCetpSubscriptionsMaintenanceRetryIntervalMs();
+            List<Future<Boolean>> futures = getKonnektorConfigs(null, null).stream().map(kc -> threadPool.submit(() -> {
+                Inet4Address meInSameSubnet = LocalAddressInSameSubnetFinder.findLocalIPinSameSubnet(konnektorToIp4(kc.getHost()));
+                String eventToHost = (meInSameSubnet != null) ? meInSameSubnet.getHostAddress() : defaultSender;
+                if (eventToHost == null) {
+                    log.log(Level.INFO, "Can't maintain subscription. Don't know my own address to tell konnektor about it");
+                    return false;
+                }
+                Boolean result = Retrier.callAndRetry(
+                    retryMillis,
+                    intervalMs,
+                    () -> renewSubscriptions(eventToHost, kc),
+                    bool -> bool
+                );
+                if (result == null || !result) {
+                    String msg = String.format(
+                        "[%s] Subscriptions maintenance is failed within %d ms retry", kc.getHost(), intervalMs);
+                    log.warning(msg);
+                }
+                return result;
+            })).toList();
+            for (Future<Boolean> future : futures) {
+                try {
+                    future.get();
+                } catch (Throwable e) {
+                    log.log(Level.SEVERE, "Subscriptions maintenance error", e);
+                }
             }
         }
     }
