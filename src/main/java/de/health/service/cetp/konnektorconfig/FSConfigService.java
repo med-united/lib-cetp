@@ -3,7 +3,6 @@ package de.health.service.cetp.konnektorconfig;
 import de.health.service.cetp.KonnektorsConfigs;
 import de.health.service.cetp.config.KonnektorConfig;
 import de.health.service.config.api.ISubscriptionConfig;
-import de.health.service.config.api.IUserConfigurations;
 import de.health.service.config.api.UserRuntimeConfig;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;

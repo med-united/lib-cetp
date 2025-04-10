@@ -1,6 +1,5 @@
 package de.health.service.cetp.domain.eventservice.cardTerminal;
 
-import de.health.service.cetp.domain.eventservice.cardTerminal.ProductInformation;
 import lombok.Data;
 import java.math.BigInteger;
 
