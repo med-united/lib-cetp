@@ -167,7 +167,7 @@ public class FSConfigService implements KonnektorConfigService {
     @Override
     public void trackSubscriptionFile(KonnektorConfig konnektorConfig, String subscriptionId, String error) {
         try {
-            writeFile(konnektorConfig.getFolder().getAbsolutePath() + "/" + subscriptionId, error);
+            writeFile(konnektorConfig.getFolder().getAbsolutePath() + File.separator + subscriptionId, error);
             cleanUpSubscriptionFiles(konnektorConfig, subscriptionId);
             konnektorConfig.setSubscriptionId(subscriptionId);
             konnektorConfig.setSubscriptionTime(OffsetDateTime.now());
