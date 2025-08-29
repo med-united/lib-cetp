@@ -3,6 +3,10 @@ package de.health.service.config.api;
 @SuppressWarnings("unused")
 public interface IRuntimeConfig {
 
+    String getIccsn();
+
+    void setIccsn(String iccsn);
+
     String getEHBAHandle();
 
     String getSMCBHandle();
