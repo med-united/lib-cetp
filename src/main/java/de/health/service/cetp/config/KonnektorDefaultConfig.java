@@ -31,6 +31,15 @@ public class KonnektorDefaultConfig {
     @ConfigProperty(name = "konnektor.default.tvMode")
     String tvMode;
 
+    @ConfigProperty(name = "konnektor.default.auth")
+    Optional<KonnektorAuth> auth;
+
+    @ConfigProperty(name = "konnektor.default.basic.auth.username")
+    Optional<String> basicAuthUsername;
+
+    @ConfigProperty(name = "konnektor.default.basic.auth.password")
+    Optional<String> basicAuthPassword;
+
     @ConfigProperty(name = "konnektor.default.cert.auth.store.file")
     Optional<String> certAuthStoreFile;
 

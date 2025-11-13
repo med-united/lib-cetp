@@ -1,5 +1,6 @@
 package de.health.service.cetp.konnektorconfig;
 
+import de.health.service.cetp.config.KonnektorAuth;
 import de.health.service.config.api.IUserConfigurations;
 import lombok.Data;
 
@@ -33,6 +34,7 @@ public class KCUserConfigurations implements IUserConfigurations {
     private String tvMode;
     private String clientCertificate;
     private String clientCertificatePassword;
+    private String auth;
     private String basicAuthUsername;
     private String basicAuthPassword;
     private String pruefnummer;
@@ -57,7 +59,12 @@ public class KCUserConfigurations implements IUserConfigurations {
             try {
                 Method writeMethod = pd.getWriteMethod();
                 if (writeMethod != null) {
-                    writeMethod.invoke(this, getValue.apply(pd.getName()));
+                    Object value = getValue.apply(pd.getName());
+                    if (value instanceof String stringValue) {
+                        writeMethod.invoke(this, stringValue.isBlank() ? null : stringValue);
+                    } else {
+                        writeMethod.invoke(this, value);
+                    }
                 } else {
                     if (!"class".equals(pd.getName())) {
                         log.warning("No write method for: " + pd.getName());
@@ -67,6 +74,11 @@ public class KCUserConfigurations implements IUserConfigurations {
                 log.log(Level.SEVERE, "Could not process konnektor user configurations", e);
             }
         }
+    }
+
+    @Override
+    public KonnektorAuth getKonnektorAuth() {
+        return KonnektorAuth.from(auth);
     }
 
     public Properties properties() {
