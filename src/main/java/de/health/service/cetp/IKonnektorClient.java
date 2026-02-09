@@ -2,6 +2,7 @@ package de.health.service.cetp;
 
 import de.health.service.cetp.domain.CetpStatus;
 import de.health.service.cetp.domain.SubscriptionResult;
+import de.health.service.cetp.domain.cardterminal.EgkHandle;
 import de.health.service.cetp.domain.eventservice.Subscription;
 import de.health.service.cetp.domain.eventservice.card.Card;
 import de.health.service.cetp.domain.eventservice.card.CardType;
@@ -46,5 +47,7 @@ public interface IKonnektorClient {
 
     String getKvnr(UserRuntimeConfig userRuntimeConfig, String egkHandle) throws CetpFault;
 
-    String getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId) throws CetpFault;
+    EgkHandle getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId) throws CetpFault;
+
+    String ejectEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle) throws CetpFault;
 }
