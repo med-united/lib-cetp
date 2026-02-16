@@ -9,6 +9,7 @@ import de.health.service.cetp.domain.eventservice.card.CardType;
 import de.health.service.cetp.domain.eventservice.cardTerminal.CardTerminal;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.config.api.UserRuntimeConfig;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -49,7 +50,7 @@ public interface IKonnektorClient {
 
     EgkHandle getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId) throws CetpFault;
 
-    String ejectEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle);
+    Pair<Boolean, String> ejectEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle, String timeout);
 
-    String requestEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle);
+    String requestEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle, String timeout);
 }
