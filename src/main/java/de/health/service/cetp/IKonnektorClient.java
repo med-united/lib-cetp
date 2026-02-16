@@ -49,5 +49,7 @@ public interface IKonnektorClient {
 
     EgkHandle getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId) throws CetpFault;
 
-    String ejectEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle) throws CetpFault;
+    String ejectEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle);
+
+    String requestEgkCard(UserRuntimeConfig userRuntimeConfig, EgkHandle egkHandle);
 }
