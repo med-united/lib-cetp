@@ -1,11 +1,14 @@
 package de.health.service.config.api;
 
+import de.health.service.cetp.beaninfo.Synthetic;
+
 import java.net.URI;
 
 public interface IKonnektorUrlConfig {
 
     String getConnectorBaseURL();
 
+    @Synthetic
     default String getKonnektorHost() {
         String connectorBaseURL = getConnectorBaseURL();
         if (connectorBaseURL == null) {
