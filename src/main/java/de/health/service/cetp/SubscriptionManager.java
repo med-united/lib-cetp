@@ -7,19 +7,19 @@ import de.health.service.cetp.domain.eventservice.Subscription;
 import de.health.service.cetp.domain.fault.CetpFault;
 import de.health.service.cetp.domain.fault.Error;
 import de.health.service.cetp.konnektorconfig.KonnektorConfigService;
+import de.health.service.cetp.konnektorconfig.KonnektorsConfigs;
+import de.health.service.cetp.konnektorconfig.SubscriptionsExecutor;
 import de.health.service.cetp.retry.Retrier;
 import de.health.service.cetp.utils.LocalAddressInSameSubnetFinder;
 import de.health.service.config.api.IFeatureConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import de.health.service.config.api.UserRuntimeConfig;
-import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
-import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.xml.ws.Holder;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.microprofile.context.ManagedExecutor;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -31,11 +31,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -51,20 +48,16 @@ public class SubscriptionManager {
 
     private static final DateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
     private final static Logger log = Logger.getLogger(SubscriptionManager.class.getName());
-    
-    public static final String FAILED = "failed";
+
+    public static final String FAILED_PREFIX = "failed";
 
     IFeatureConfig featureConfig;
     ISubscriptionConfig subscriptionConfig;
     UserRuntimeConfig userRuntimeConfig;
     IKonnektorClient konnektorClient;
     KonnektorConfigService kcService;
-
-    private ExecutorService threadPool;
-
-    @Inject
-    @KonnektorsConfigs
-    Map<String, KonnektorConfig> konnektorsConfigs;
+    KonnektorsConfigs konnektorsConfigs;
+    ManagedExecutor managedExecutor;
 
     @Inject
     public SubscriptionManager(
@@ -72,28 +65,22 @@ public class SubscriptionManager {
         ISubscriptionConfig subscriptionConfig,
         UserRuntimeConfig userRuntimeConfig,
         IKonnektorClient konnektorClient,
-        KonnektorConfigService kcService
+        KonnektorConfigService kcService,
+        KonnektorsConfigs konnektorsConfigs,
+        @SubscriptionsExecutor ManagedExecutor managedExecutor
     ) {
         this.featureConfig = featureConfig;
         this.subscriptionConfig = subscriptionConfig;
         this.userRuntimeConfig = userRuntimeConfig;
         this.konnektorClient = konnektorClient;
         this.kcService = kcService;
+        this.konnektorsConfigs = konnektorsConfigs;
+        this.managedExecutor = managedExecutor;
     }
 
-    public void onStart(@Observes @Priority(20) StartupEvent ev) {
-        if (featureConfig.isCetpEnabled()) {
-            log.info("SubscriptionManager starting..");
-            threadPool = Executors.newFixedThreadPool(konnektorsConfigs.size());
-            log.info("SubscriptionManager started");
-        } else {
-            log.warning("CETP feature is disabled, please check 'feature.cetp.enabled' property");
-        }
-    }
-    
     @Scheduled(
-        every = "${cetp.subscriptions.maintenance.interval.sec:3s}", // TODO naming
-        delay = 5,
+        every = "${cetp.subscriptions.maintenance.interval.sec:3s}",
+        delay = 0,
         delayUnit = TimeUnit.SECONDS,
         concurrentExecution = Scheduled.ConcurrentExecution.SKIP
     )
@@ -105,26 +92,28 @@ public class SubscriptionManager {
             }
             List<Integer> retryMillis = List.of(200);
             int intervalMs = subscriptionConfig.getCetpSubscriptionsMaintenanceRetryIntervalMs();
-            List<Future<Boolean>> futures = getKonnektorConfigs(null, null).stream().map(kc -> threadPool.submit(() -> {
-                Inet4Address meInSameSubnet = LocalAddressInSameSubnetFinder.findLocalIPinSameSubnet(konnektorToIp4(kc.getHost()));
-                String eventToHost = (meInSameSubnet != null) ? meInSameSubnet.getHostAddress() : defaultSender;
-                if (eventToHost == null) {
-                    log.log(Level.INFO, "Can't maintain subscription. Don't know my own address to tell konnektor about it");
-                    return false;
-                }
-                Boolean result = Retrier.callAndRetry(
-                    retryMillis,
-                    intervalMs,
-                    () -> renewSubscriptions(eventToHost, kc),
-                    bool -> bool
-                );
-                if (result == null || !result) {
-                    String msg = String.format(
-                        "[%s] Subscriptions maintenance is failed within %d ms retry", kc.getHost(), intervalMs);
-                    log.warning(msg);
-                }
-                return result;
-            })).toList();
+            List<Future<Boolean>> futures = konnektorsConfigs.getConfigs().stream()
+                .map(config -> managedExecutor.submit(() -> {
+                    Inet4Address peer = konnektorToIp4(config.getHost());
+                    Inet4Address meInSameSubnet = LocalAddressInSameSubnetFinder.findLocalIPinSameSubnet(peer);
+                    String eventToHost = (meInSameSubnet != null) ? meInSameSubnet.getHostAddress() : defaultSender;
+                    if (eventToHost == null) {
+                        log.log(Level.INFO, "Can't maintain subscription. Don't know my own address to tell konnektor about it");
+                        return false;
+                    }
+                    Boolean result = Retrier.callAndRetry(
+                        retryMillis,
+                        intervalMs,
+                        () -> renewSubscriptions(eventToHost, config),
+                        bool -> bool
+                    );
+                    if (result == null || !result) {
+                        String msg = String.format(
+                            "[%s] Subscriptions maintenance is failed within %d ms retry", config.getHost(), intervalMs);
+                        log.warning(msg);
+                    }
+                    return result;
+                })).toList();
             for (Future<Boolean> future : futures) {
                 try {
                     future.get();
@@ -146,18 +135,18 @@ public class SubscriptionManager {
         }
     }
 
-    public boolean renewSubscriptions(String eventToHost, KonnektorConfig kc) {
-        Semaphore semaphore = kc.getSemaphore();
+    public boolean renewSubscriptions(String eventToHost, KonnektorConfig config) {
+        Semaphore semaphore = config.getSemaphore();
         if (semaphore.tryAcquire()) {
             try {
-                UserRuntimeConfig runtimeConfig = modifyRuntimeConfig(null, kc);
-                String cetpHost = "cetp://" + eventToHost + ":" + kc.getCetpPort();
+                UserRuntimeConfig runtimeConfig = modifyRuntimeConfig(null, config);
+                String cetpHost = "cetp://" + eventToHost + ":" + config.getCetpPort();
                 List<Subscription> subscriptions = konnektorClient.getSubscriptions(runtimeConfig)
                     .stream().filter(st -> st.getEventTo().contains(eventToHost)).toList();
 
                 Holder<String> resultHolder = new Holder<>();
                 if (subscriptions.isEmpty()) {
-                    return subscribe(kc, runtimeConfig, cetpHost, resultHolder);
+                    return subscribe(config, runtimeConfig, cetpHost, resultHolder);
                 } else {
                     Optional<Subscription> newestOpt = subscriptions.stream().max(
                         Comparator.comparing(Subscription::getTerminationTime)
@@ -169,17 +158,17 @@ public class SubscriptionManager {
 
                     // force re-subscribe every 12 hours
                     int periodSeconds = subscriptionConfig.getForceResubscribePeriodSeconds();
-                    boolean forceSubscribe = kc.getSubscriptionTime().plusSeconds(periodSeconds).isBefore(OffsetDateTime.now());
+                    boolean forceSubscribe = config.getSubscriptionTime().plusSeconds(periodSeconds).isBefore(OffsetDateTime.now());
                     if (expired || forceSubscribe) {
-                        boolean subscribed = subscribe(kc, runtimeConfig, cetpHost, resultHolder);
+                        boolean subscribed = subscribe(config, runtimeConfig, cetpHost, resultHolder);
                         if (forceSubscribe && subscribed) {
-                            log.info(String.format("Force subscribed to %s: %s", kc.getHost(), resultHolder.value));
+                            log.info(String.format("Force subscribed to %s: %s", config.getHost(), resultHolder.value));
                         }
                         // all are expired, drop them
                         boolean dropped = drop(runtimeConfig, subscriptions).isEmpty();
                         return subscribed && dropped;
                     } else {
-                        boolean renewed = renew(runtimeConfig, kc, newest, now, expireDate);
+                        boolean renewed = renew(runtimeConfig, config, newest, now, expireDate);
                         List<Subscription> olderSubscriptions = subscriptions.stream()
                             .filter(st -> !st.getSubscriptionId().equals(newest.getSubscriptionId()))
                             .toList();
@@ -188,13 +177,13 @@ public class SubscriptionManager {
                     }
                 }
             } catch (CetpFault fm) {
-                log.log(Level.SEVERE, String.format("[%s] Subscriptions maintenance error", kc.getHost()), fm);
+                log.log(Level.SEVERE, String.format("[%s] Subscriptions maintenance error", config.getHost()), fm);
                 return false;
             } finally {
                 semaphore.release();
             }
         } else {
-            log.warning(String.format("[%s] Subscription maintenance is in progress, try later", kc.getHost()));
+            log.warning(String.format("[%s] Subscription maintenance is in progress, try later", config.getHost()));
             return true;
         }
     }
@@ -276,14 +265,6 @@ public class SubscriptionManager {
         }).filter(p -> !p.getKey()).map(Pair::getValue).toList();
     }
 
-    // konnektorsConfigs KEY: "konnektorHost<sep>workplaceId"
-    public Collection<KonnektorConfig> getKonnektorConfigs(String host, String workplaceId) {
-        return konnektorsConfigs.entrySet().stream()
-            .filter(entry -> host == null || entry.getKey().contains(host))
-            .filter(entry -> workplaceId == null || entry.getKey().contains(workplaceId))
-            .map(Map.Entry::getValue).toList();
-    }
-
     private boolean subscribe(
         KonnektorConfig konnektorConfig,
         UserRuntimeConfig runtimeConfig,
@@ -304,9 +285,9 @@ public class SubscriptionManager {
             String statusResult = printError(error);
             resultHolder.value = statusResult;
             String subscriptionId = konnektorConfig.getSubscriptionId();
-            String fileName = subscriptionId != null && subscriptionId.startsWith(FAILED)
+            String fileName = subscriptionId != null && subscriptionId.startsWith(FAILED_PREFIX)
                 ? subscriptionId
-                : String.format("%s-%s", FAILED, subscriptionId);
+                : String.format("%s-%s", FAILED_PREFIX, subscriptionId);
 
             kcService.trackSubscriptionFile(konnektorConfig, fileName, statusResult);
             log.log(Level.WARNING, String.format("Could not subscribe -> %s", statusResult));
@@ -325,7 +306,7 @@ public class SubscriptionManager {
         if (!featureConfig.isCetpEnabled()) {
             return List.of("CETP feature is disabled");
         }
-        Collection<KonnektorConfig> konnektorConfigs = getKonnektorConfigs(host, workplaceId);
+        Collection<KonnektorConfig> konnektorConfigs = konnektorsConfigs.filterConfigs(host, workplaceId);
         List<String> statuses = konnektorConfigs.stream().map(kc -> {
                 Semaphore semaphore = kc.getSemaphore();
                 if (semaphore.tryAcquire()) {
@@ -362,11 +343,11 @@ public class SubscriptionManager {
         boolean subscribe
     ) {
         String subscriptionId = konnektorConfig.getSubscriptionId();
-        String failedUnsubscriptionFileName = subscriptionId != null && subscriptionId.startsWith(FAILED)
+        String failedUnsubscriptionFileName = subscriptionId != null && subscriptionId.startsWith(FAILED_PREFIX)
             ? subscriptionId
-            : String.format("%s-unsubscription-%s", FAILED, subscriptionId);
+            : String.format("%s-unsubscription-%s", FAILED_PREFIX, subscriptionId);
 
-        String failedSubscriptionFileName = String.format("%s-subscription", FAILED);
+        String failedSubscriptionFileName = String.format("%s-subscription", FAILED_PREFIX);
 
         String statusResult;
         boolean unsubscribed = false;

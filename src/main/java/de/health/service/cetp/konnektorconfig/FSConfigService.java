@@ -1,6 +1,5 @@
 package de.health.service.cetp.konnektorconfig;
 
-import de.health.service.cetp.KonnektorsConfigs;
 import de.health.service.cetp.config.KonnektorConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import de.health.service.config.api.UserRuntimeConfig;
@@ -12,6 +11,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import lombok.Setter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.context.ManagedExecutor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static de.health.service.cetp.SubscriptionManager.FAILED;
+import static de.health.service.cetp.SubscriptionManager.FAILED_PREFIX;
 
 @SuppressWarnings("CdiInjectionPointsInspection")
 @ApplicationScoped
@@ -70,9 +70,16 @@ public class FSConfigService implements KonnektorConfigService {
     }
 
     @Produces
-    @KonnektorsConfigs
-    public Map<String, KonnektorConfig> configMap() {
-        return hostToKonnektorConfig;
+    @ApplicationScoped
+    public KonnektorsConfigs konnektorConfigs() {
+        return new KonnektorsConfigs(hostToKonnektorConfig);
+    }
+
+    @Produces
+    @ApplicationScoped
+    @SubscriptionsExecutor
+    public ManagedExecutor subscriptionExecutor() {
+        return ManagedExecutor.builder().maxAsync(hostToKonnektorConfig.size()).build();
     }
 
     @Override
@@ -132,7 +139,7 @@ public class FSConfigService implements KonnektorConfigService {
             .max(Comparator.comparingLong(File::lastModified)));
 
         Optional<File> subscriptionFileOpt = Optional.ofNullable(files).flatMap(list -> Arrays.stream(list)
-            .filter(f -> !f.getName().startsWith(FAILED) && !f.getName().endsWith(PROPERTIES_EXT))
+            .filter(f -> !f.getName().startsWith(FAILED_PREFIX) && !f.getName().endsWith(PROPERTIES_EXT))
             .max(Comparator.comparingLong(File::lastModified)));
 
         if (userPropertiesOpt.isPresent()) {
@@ -147,7 +154,7 @@ public class FSConfigService implements KonnektorConfigService {
                     properties.load(fis);
                     KonnektorConfig konnektorConfig = new KonnektorConfig();
                     konnektorConfig.setCetpPort(Integer.parseInt(folder.getName()));
-                    konnektorConfig.setUserConfigurations(new KCUserConfigurations(properties));
+                    konnektorConfig.setUserConfigurations(new UserConfigurations(properties));
                     konnektorConfig.setCardlinkEndpoint(new URI(properties.getProperty("cardlinkServerURL")));
                     konnektorConfig.setSubscriptionId(subscriptionId);
                     konnektorConfig.setSubscriptionTime(subscriptionTime);

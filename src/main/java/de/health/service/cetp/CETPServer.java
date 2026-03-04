@@ -2,6 +2,7 @@ package de.health.service.cetp;
 
 import de.health.service.cetp.codec.CETPEventDecoderFactory;
 import de.health.service.cetp.config.KonnektorConfig;
+import de.health.service.cetp.konnektorconfig.KonnektorsConfigs;
 import de.health.service.config.api.IFeatureConfig;
 import de.health.service.config.api.ISubscriptionConfig;
 import io.netty.bootstrap.ServerBootstrap;
@@ -29,6 +30,7 @@ import jakarta.inject.Inject;
 import lombok.Getter;
 import org.apache.commons.lang3.time.StopWatch;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,28 +55,27 @@ public class CETPServer {
     private final Map<String, Object> startedOnPorts = new HashMap<>();
 
     IFeatureConfig featureConfig;
-    ISubscriptionConfig subscriptionConfig;
-    SubscriptionManager subscriptionManager;
     ISecretsManager secretsManager;
-
+    KonnektorsConfigs konnektorsConfigs;
+    ISubscriptionConfig subscriptionConfig;
     CETPEventDecoderFactory eventDecoderFactory;
     CETPEventHandlerFactory eventHandlerFactory;
 
     @Inject
     public CETPServer(
         IFeatureConfig featureConfig,
+        ISecretsManager secretsManager,
+        KonnektorsConfigs konnektorsConfigs,
         ISubscriptionConfig subscriptionConfig,
-        SubscriptionManager subscriptionManager,
         CETPEventDecoderFactory eventDecoderFactory,
-        CETPEventHandlerFactory eventHandlerFactory,
-        ISecretsManager secretsManager
+        CETPEventHandlerFactory eventHandlerFactory
     ) {
         this.featureConfig = featureConfig;
+        this.secretsManager = secretsManager;
+        this.konnektorsConfigs = konnektorsConfigs;
         this.subscriptionConfig = subscriptionConfig;
-        this.subscriptionManager = subscriptionManager;
         this.eventDecoderFactory = eventDecoderFactory;
         this.eventHandlerFactory = eventHandlerFactory;
-        this.secretsManager = secretsManager;
     }
 
     // Make sure subscription manager get onStart first, before CETPServer at least!
@@ -103,8 +104,10 @@ public class CETPServer {
     }
 
     private void run() {
-        for (KonnektorConfig config : subscriptionManager.getKonnektorConfigs(null, null)) {
-            log.info("Running CETP Server on port " + config.getCetpPort() + " for cardlink server: " + config.getCardlinkEndpoint());
+        for (KonnektorConfig config : konnektorsConfigs.getConfigs()) {
+            Integer cetpPort = config.getCetpPort();
+            URI endpoint = config.getCardlinkEndpoint();
+            log.info(String.format("Running CETP Server on port %d for cardlink server: %s", cetpPort, endpoint));
             runServer(config);
         }
     }

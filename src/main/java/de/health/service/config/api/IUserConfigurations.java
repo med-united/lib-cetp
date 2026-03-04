@@ -1,6 +1,5 @@
 package de.health.service.config.api;
 
-import de.health.service.cetp.config.KonnektorAuth;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.reflect.Field;
@@ -11,7 +10,11 @@ import java.util.List;
 @SuppressWarnings("unused")
 public interface IUserConfigurations extends IKonnektorUrlConfig {
 
-    KonnektorAuth getKonnektorAuth();
+    String getAuth();
+
+    String getIccsn();
+
+    void setIccsn(String iccsn);
 
     String getBasicAuthUsername();
 

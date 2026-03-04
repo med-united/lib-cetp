@@ -3,9 +3,9 @@ package de.health.service.config.api;
 @SuppressWarnings("unused")
 public interface IRuntimeConfig {
 
-    String getIccsn();
+    String getIdpClientId();
 
-    void setIccsn(String iccsn);
+    String getIdpAuthRequestRedirectURL();
 
     String getEHBAHandle();
 
@@ -16,8 +16,4 @@ public interface IRuntimeConfig {
     void setSMCBHandle(String smcbHandle);
 
     boolean isSendPreview();
-
-    String getIdpAuthRequestRedirectURL();
-
-    String getIdpClientId();
 }
