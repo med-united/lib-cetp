@@ -85,11 +85,11 @@ public class KonnektorDefaultConfig {
                 byte[] certBytes = new byte[0];
                 try {
                     certBytes = Files.readAllBytes(Paths.get(certFilePath));
+                    String prefix = "data:application/x-pkcs12;base64,";
+                    clientCertificate = prefix + Base64.getEncoder().encodeToString(certBytes).replace("\n", "");
                 } catch (IOException e) {
                     log.error("Unable to read certificate from " + certFilePath, e);
                 }
-                String prefix = "data:application/x-pkcs12;base64,";
-                clientCertificate = prefix + Base64.getEncoder().encodeToString(certBytes).replace("\n", "");
             }
         }
         return clientCertificate;
