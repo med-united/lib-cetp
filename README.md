@@ -12,4 +12,4 @@ Manages subscriptions for Konnektor CETP events. Introduces general adapter inte
 There are several of additional interfaces which must be implemented by lib-cetp consumer services:
 - [CETPEventDecoderFactory](src/main/java/de/health/service/cetp/codec/CETPEventDecoderFactory.java) - service must know how to decode CETP event based on telematik-api version
 - [CETPEventHandlerFactory](src/main/java/de/health/service/cetp/CETPEventHandlerFactory.java) - service must provide handling logic of the CETP event
-- [FallbackSecretsManager](src/main/java/de/health/service/cetp/FallbackSecretsManager.java) - if konnektor config doesn't contain client certificate properties then fallback KeyManagerFactory can be used. 
+- [ISecretsManager](src/main/java/de/health/service/cetp/FallbackSecretsManager.java) - if konnektor config doesn't contain client certificate properties then fallback KeyManagerFactory can be used. 
