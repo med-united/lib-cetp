@@ -1,28 +1,18 @@
 package de.health.service.cetp;
 
-import de.health.service.cetp.cardlink.CardlinkClient;
 import de.health.service.cetp.domain.eventservice.event.CetpEvent;
 import de.health.service.cetp.domain.eventservice.event.CetpParameter;
 import de.health.service.cetp.domain.eventservice.event.DecodeResult;
 import de.health.service.config.api.IUserConfigurations;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public abstract class AbstractCETPEventHandler extends ChannelInboundHandlerAdapter {
-
-    private static final Logger log = Logger.getLogger(AbstractCETPEventHandler.class.getName());
-
-    protected CardlinkClient cardlinkClient;
-
-    public AbstractCETPEventHandler(CardlinkClient cardlinkClient) {
-        this.cardlinkClient = cardlinkClient;
-    }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
@@ -32,9 +22,19 @@ public abstract class AbstractCETPEventHandler extends ChannelInboundHandlerAdap
     public void handlerRemoved(ChannelHandlerContext ctx) {
     }
 
+    protected abstract Logger getLog();
+
     protected abstract String getTopicName();
 
-    protected abstract void processEvent(IUserConfigurations configurations, Map<String, String> paramsMap);
+    protected abstract void processEvent(IUserConfigurations configurations, Map<String, String> paramsMap, String eventXml);
+
+    protected void logCardInsertedEvent(Map<String, String> paramsMap, String correlationId) {
+        String paramsStr = paramsMap.entrySet().stream()
+            .filter(p -> !p.getKey().equals("CardHolderName"))
+            .map(p -> String.format("key=%s value=%s", p.getKey(), p.getValue())).collect(Collectors.joining(", "));
+
+        getLog().info(String.format("[%s] Card inserted: params: %s", correlationId, paramsStr));
+    }
 
     protected Map<String, String> getParams(CetpEvent event) {
         return event.getParameters().stream().collect(Collectors.toMap(CetpParameter::getKey, CetpParameter::getValue));
@@ -45,42 +45,37 @@ public abstract class AbstractCETPEventHandler extends ChannelInboundHandlerAdap
         DecodeResult decodeResult = (DecodeResult) msg;
         CetpEvent event = decodeResult.getEvent();
         if (event.getTopic().equals(getTopicName())) {
-            try {
-                cardlinkClient.connect();
-                processEvent(decodeResult.getConfigurations(), getParams(event));
-            } finally {
-                cardlinkClient.close();
-            }
+            processEvent(decodeResult.getConfigurations(), getParams(event), decodeResult.getEventXml());
         }
     }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        if (log.isLoggable(Level.FINE)) {
+        if (getLog().isDebugEnabled()) {
             String port = "unknown";
             if (ctx.channel().localAddress() instanceof InetSocketAddress inetSocketAddress) {
                 port = String.valueOf(inetSocketAddress.getPort());
             }
-            log.fine(String.format("New CETP connection established (on port %s)", port));
+            getLog().debug(String.format("New CETP connection established (on port %s)", port));
         }
         super.channelRegistered(ctx);
     }
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        if (log.isLoggable(Level.FINE)) {
+        if (getLog().isDebugEnabled()) {
             String port = "unknown";
             if (ctx.channel().localAddress() instanceof InetSocketAddress inetSocketAddress) {
                 port = String.valueOf(inetSocketAddress.getPort());
             }
-            log.fine(String.format("CETP connection was closed (on port %s)", port));
+            getLog().debug(String.format("CETP connection was closed (on port %s)", port));
         }
         super.channelUnregistered(ctx);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.log(Level.SEVERE, "Caught an exception handling CETP input", cause);
+        getLog().error("Caught an exception handling CETP input", cause);
         ctx.close();
     }
 }
