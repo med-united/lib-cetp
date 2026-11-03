@@ -46,6 +46,8 @@ public interface IKonnektorClient {
 
     String getSmcbHandle(UserRuntimeConfig userRuntimeConfig) throws CetpFault;
 
+    String getSmcbPinStatus(UserRuntimeConfig userRuntimeConfig, String smcbHandle) throws CetpFault;
+
     String getKvnr(UserRuntimeConfig userRuntimeConfig, String egkHandle) throws CetpFault;
 
     EgkHandle getEgkHandle(UserRuntimeConfig userRuntimeConfig, String insurantId) throws CetpFault;
