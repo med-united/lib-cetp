@@ -127,8 +127,23 @@ public class CETPServer {
                     @Override
                     public void initChannel(SocketChannel ch) {
                         try {
+                            // Pin the cipher suites the secunet Konnektor offers in its CETP
+                            // ClientHello (captured against a production Konnektor). Stay on the
+                            // stock JDK provider: the Konnektor only offers legacy rsa_pkcs1_*
+                            // handshake signature schemes (no PSS), which BCJSSE refuses to sign
+                            // in TLS 1.2 while SunJSSE signs them fine. The offered ECDHE groups
+                            // are P-256/P-384, so BouncyCastle's Brainpool support is not needed.
                             SslContext sslContext = SslContextBuilder
                                 .forServer(secretsManager.getKeyManagerFactory(config))
+                                .ciphers(java.util.List.of(
+                                    "TLS_AES_256_GCM_SHA384",
+                                    "TLS_AES_128_GCM_SHA256",
+                                    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                                    "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+                                    "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+                                    "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+                                    "TLS_DHE_RSA_WITH_AES_128_CBC_SHA"))
                                 .clientAuth(ClientAuth.NONE)
                                 .build();
 
